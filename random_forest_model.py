@@ -56,8 +56,7 @@ def section(lines, title):
 # START RUN
 # ============================================================
 run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-run_date = datetime.now().strftime("%Y-%m-%d")
-run_dir = os.path.join(RUNS_BASE_DIR, MODEL_NAME, run_date)
+run_dir = os.path.join(RUNS_BASE_DIR, MODEL_NAME, run_timestamp)
 os.makedirs(run_dir, exist_ok=True)
 
 report_path = os.path.join(run_dir, f"run_{run_timestamp}.txt")

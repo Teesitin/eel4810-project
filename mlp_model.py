@@ -586,8 +586,7 @@ def train_one_model(seed, X_train, y_train, X_stop, y_stop, device, tag, report_
 set_seed(42)
 
 run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-run_date = datetime.now().strftime("%Y-%m-%d")
-run_dir = os.path.join(RUNS_BASE_DIR, MODEL_NAME, run_date)
+run_dir = os.path.join(RUNS_BASE_DIR, MODEL_NAME, run_timestamp)
 os.makedirs(run_dir, exist_ok=True)
 
 run_name = f"mlp_timesplit_summary_w{WINDOW}_h{PREDICTION_HORIZON}_{run_timestamp}"

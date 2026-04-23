@@ -175,10 +175,10 @@ LOCAL_FILE_PATH = "data/stock-data.json"
 RUNS_BASE_DIR = "runs"
 MODEL_NAME = "lstm"
 
-DATA_ROWS_TO_USE = 50000   # None = use all rows
+DATA_ROWS_TO_USE = None
 
-WINDOW = 120
-PREDICTION_HORIZON = 60
+WINDOW = 180
+PREDICTION_HORIZON = 90
 
 FIXED_RETURN_THRESHOLD = None
 TRAIN_MOVE_QUANTILE = 0.55
@@ -187,16 +187,16 @@ TEST_FRACTION = 0.15
 CV_SPLITS = 3
 CV_GAP = 20
 
-ENSEMBLE_SEEDS = [42, 1337, 2026]
+ENSEMBLE_SEEDS = [42, 1337, 2026, 777, 31415, 123, 999, 5555, 8080, 2718, 9001, 404, 8675309, 12345, 98765]
 MIN_SEED_OOF_AUC = 0.52
 
-MAX_EPOCHS = 35
-BATCH_SIZE = 512
-MAX_LR = 5e-4
-WEIGHT_DECAY = 5e-4
-DROPOUT = 0.35
+MAX_EPOCHS = 36
+BATCH_SIZE = 256
+MAX_LR = 3.5e-4
+WEIGHT_DECAY = 7e-4
+DROPOUT = 0.40
 LABEL_SMOOTHING = 0.02
-EARLY_STOPPING_PATIENCE = 6
+EARLY_STOPPING_PATIENCE = 7
 NUM_WORKERS = 0
 GRAD_CLIP_NORM = 1.0
 
@@ -210,7 +210,7 @@ CLIP_LOWER_Q = 0.005
 CLIP_UPPER_Q = 0.995
 
 HIDDEN_SIZE = 128
-NUM_LAYERS = 2
+NUM_LAYERS = 4
 
 DEVICE = "cuda" if (SELECTED_DEVICE_TYPE == "cuda" and torch.cuda.is_available()) else "cpu"
 
@@ -402,30 +402,33 @@ def label_rows_from_threshold(df, move_threshold):
 
 
 def build_sequence_windows(df_split, base_features, window, split_name, report_lines):
-    X, y, times, future_ret = [], [], [], []
-
-    needed_cols = list(base_features) + ["timestamp", "future_return"]
+    needed_cols = list(base_features) + ["timestamp", "future_return", "target"]
     work = df_split.dropna(subset=needed_cols).reset_index(drop=True).copy()
 
+    feat_values = work[base_features].to_numpy(dtype=np.float32)
+    target_values = work["target"].to_numpy()
+    times_values = work["timestamp"].to_numpy()
+    future_ret_values = work["future_return"].to_numpy(dtype=np.float32)
+
+    X, y, times, future_ret = [], [], [], []
     skipped_neutral = 0
 
     for end_idx in range(window - 1, len(work)):
-        label = work.loc[end_idx, "target"]
+        if end_idx % 10000 == 0:
+            print(f"{split_name}: building window {end_idx:,} / {len(work):,}")
 
-        if pd.isna(label):
+        label = target_values[end_idx]
+
+        if np.isnan(label):
             skipped_neutral += 1
             continue
 
         start_idx = end_idx - window + 1
-        window_matrix = work.loc[start_idx:end_idx, base_features].values.astype(np.float32)
 
-        ts = work.loc[end_idx, "timestamp"]
-        fr = np.float32(work.loc[end_idx, "future_return"])
-
-        X.append(window_matrix)
+        X.append(feat_values[start_idx:end_idx + 1])
         y.append(np.float32(label))
-        times.append(ts)
-        future_ret.append(fr)
+        times.append(times_values[end_idx])
+        future_ret.append(future_ret_values[end_idx])
 
     X = np.array(X, dtype=np.float32)
     y = np.array(y, dtype=np.float32)
@@ -702,8 +705,7 @@ def train_one_model(seed, X_train, y_train, X_stop, y_stop, device, tag, report_
 set_seed(42)
 
 run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-run_date = datetime.now().strftime("%Y-%m-%d")
-run_dir = os.path.join(RUNS_BASE_DIR, MODEL_NAME, run_date)
+run_dir = os.path.join(RUNS_BASE_DIR, MODEL_NAME, run_timestamp)
 os.makedirs(run_dir, exist_ok=True)
 
 if DEVICE == "cuda":
