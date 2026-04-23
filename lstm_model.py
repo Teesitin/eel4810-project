@@ -23,12 +23,6 @@ def parse_compute_capability(cc_str):
 
 
 def detect_supported_gpus_with_nvidia_smi(min_cc=MIN_SUPPORTED_COMPUTE_CAPABILITY):
-    """
-    Detect GPUs with nvidia-smi before importing torch.
-    Returns:
-        all_gpus: all detected GPUs
-        supported_gpus: only GPUs meeting the minimum compute capability
-    """
     try:
         result = subprocess.run(
             [
@@ -69,12 +63,6 @@ def detect_supported_gpus_with_nvidia_smi(min_cc=MIN_SUPPORTED_COMPUTE_CAPABILIT
 
 
 def pick_best_supported_gpu(supported_gpus):
-    """
-    Pick the best supported GPU by:
-    1. highest compute capability
-    2. highest memory
-    3. lowest index
-    """
     if not supported_gpus:
         return None
 
@@ -86,14 +74,6 @@ def pick_best_supported_gpu(supported_gpus):
 
 
 def choose_device_pre_torch():
-    """
-    Show only CPU + supported GPUs.
-    Returns:
-        selected_device_type: "cpu" or "cuda"
-        selected_gpu_info: dict or None
-        all_gpus: list[dict]
-        supported_gpus: list[dict]
-    """
     all_gpus, supported_gpus = detect_supported_gpus_with_nvidia_smi()
     best_gpu = pick_best_supported_gpu(supported_gpus)
 
@@ -189,25 +169,24 @@ from sklearn.model_selection import TimeSeriesSplit
 
 
 # ============================================================
-# CONFIGs
+# CONFIG
 # ============================================================
-LOCAL_FILE_PATH = "msft_data.json"
-RUNS_DIR = "runs"
+LOCAL_FILE_PATH = "data/stock-data.json"
+RUNS_BASE_DIR = "runs"
+MODEL_NAME = "lstm"
 
-# Safer defaults than the current file
+DATA_ROWS_TO_USE = 50000   # None = use all rows
+
 WINDOW = 120
 PREDICTION_HORIZON = 60
 
-# Keep only larger moves. If None, learned from trainval rows only.
 FIXED_RETURN_THRESHOLD = None
 TRAIN_MOVE_QUANTILE = 0.55
 
-# Split strategy
 TEST_FRACTION = 0.15
 CV_SPLITS = 3
 CV_GAP = 20
 
-# Training
 ENSEMBLE_SEEDS = [42, 1337, 2026]
 MIN_SEED_OOF_AUC = 0.52
 
@@ -221,24 +200,20 @@ EARLY_STOPPING_PATIENCE = 6
 NUM_WORKERS = 0
 GRAD_CLIP_NORM = 1.0
 
-# Final threshold search
 THRESHOLD_MIN = 0.35
 THRESHOLD_MAX = 0.65
 THRESHOLD_STEPS = 121
 MIN_POSITIVE_RATE = 0.35
 MAX_POSITIVE_RATE = 0.65
 
-# Train-only clipping before scaling
 CLIP_LOWER_Q = 0.005
 CLIP_UPPER_Q = 0.995
 
-# Model size
 HIDDEN_SIZE = 128
 NUM_LAYERS = 2
 
 DEVICE = "cuda" if (SELECTED_DEVICE_TYPE == "cuda" and torch.cuda.is_available()) else "cpu"
 
-# A smaller, more stable feature set for MLP input summaries
 BASE_FEATURES = [
     "return_1",
     "return_5",
@@ -347,11 +322,9 @@ def compute_rsi(series, period=14):
 def build_row_features(df):
     df = df.copy()
 
-    # Future target basis
     df["future_close"] = df["close"].shift(-PREDICTION_HORIZON)
     df["future_return"] = df["future_close"] / df["close"] - 1.0
 
-    # Returns
     df["return_1"] = df["close"].pct_change(1)
     df["return_3"] = df["close"].pct_change(3)
     df["return_5"] = df["close"].pct_change(5)
@@ -360,12 +333,10 @@ def build_row_features(df):
     df["return_30"] = df["close"].pct_change(30)
     df["log_return_1"] = np.log(df["close"] / df["close"].shift(1))
 
-    # Volume
     df["volume_change_1"] = df["volume"].pct_change(1)
     df["volume_change_3"] = df["volume"].pct_change(3)
     df["volume_change_5"] = df["volume"].pct_change(5)
 
-    # Candle structure
     df["high_low"] = df["high"] - df["low"]
     df["open_close"] = df["close"] - df["open"]
     df["body_abs"] = df["open_close"].abs()
@@ -374,12 +345,10 @@ def build_row_features(df):
     df["upper_wick"] = df["high"] - df[["open", "close"]].max(axis=1)
     df["lower_wick"] = df[["open", "close"]].min(axis=1) - df["low"]
 
-    # Rolling stats
     for w in [5, 10, 20, 50]:
         df[f"rolling_mean_{w}"] = df["close"].rolling(w).mean()
         df[f"rolling_std_{w}"] = df["close"].rolling(w).std()
 
-    # EMA
     for span in [5, 10, 20, 50]:
         df[f"ema_{span}"] = df["close"].ewm(span=span, adjust=False).mean()
         df[f"price_vs_ema_{span}"] = df["close"] / df[f"ema_{span}"] - 1.0
@@ -388,27 +357,22 @@ def build_row_features(df):
     df["ema_spread_5_20"] = df["ema_5"] / df["ema_20"] - 1.0
     df["ema_spread_10_50"] = df["ema_10"] / df["ema_50"] - 1.0
 
-    # Return / range stats
     for w in [5, 10, 20]:
         df[f"return_mean_{w}"] = df["return_1"].rolling(w).mean()
         df[f"return_std_{w}"] = df["return_1"].rolling(w).std()
         df[f"range_mean_{w}"] = df["high_low"].rolling(w).mean()
         df[f"range_std_{w}"] = df["high_low"].rolling(w).std()
 
-    # Volume z-score
     for w in [10, 30]:
         df[f"volume_mean_{w}"] = df["volume"].rolling(w).mean()
         df[f"volume_std_{w}"] = df["volume"].rolling(w).std()
         df[f"volume_z_{w}"] = (df["volume"] - df[f"volume_mean_{w}"]) / df[f"volume_std_{w}"]
 
-    # Momentum
     for w in [5, 10, 20, 30]:
         df[f"momentum_{w}"] = df["close"] - df["close"].shift(w)
 
-    # RSI
     df["rsi_14"] = compute_rsi(df["close"], period=14)
 
-    # Calendar / intraday
     ny_time = df["timestamp"].dt.tz_convert("America/New_York")
     minute_of_day = ny_time.dt.hour * 60 + ny_time.dt.minute
     day_of_week = ny_time.dt.dayofweek
@@ -556,10 +520,8 @@ class LSTMClassifier(nn.Module):
 
     def forward(self, x):
         out, (h_n, c_n) = self.lstm(x)
-
         last_hidden = h_n[-1]
         last_hidden = self.dropout(last_hidden)
-
         logits = self.fc(last_hidden).squeeze(-1)
         return logits
 
@@ -738,19 +700,22 @@ def train_one_model(seed, X_train, y_train, X_stop, y_stop, device, tag, report_
 # MAIN
 # ============================================================
 set_seed(42)
-os.makedirs(RUNS_DIR, exist_ok=True)
+
+run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+run_date = datetime.now().strftime("%Y-%m-%d")
+run_dir = os.path.join(RUNS_BASE_DIR, MODEL_NAME, run_date)
+os.makedirs(run_dir, exist_ok=True)
 
 if DEVICE == "cuda":
     print(f"PyTorch sees GPU: {torch.cuda.get_device_name(0)}")
 else:
     print("PyTorch is running on CPU.")
 
-run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 run_name = f"lstm_timesplit_sequence_w{WINDOW}_h{PREDICTION_HORIZON}_{run_timestamp}"
 
-report_path = os.path.join(RUNS_DIR, f"{run_name}.txt")
-history_csv_path = os.path.join(RUNS_DIR, f"{run_name}_history.csv")
-predictions_csv_path = os.path.join(RUNS_DIR, f"{run_name}_test_predictions.csv")
+report_path = os.path.join(run_dir, f"{run_name}.txt")
+history_csv_path = os.path.join(run_dir, f"{run_name}_history.csv")
+predictions_csv_path = os.path.join(run_dir, f"{run_name}_test_predictions.csv")
 
 report_lines = []
 history_rows = []
@@ -758,8 +723,10 @@ history_rows = []
 section(report_lines, "RUN METADATA")
 log_print(report_lines, f"Run timestamp: {run_timestamp}")
 log_print(report_lines, f"Run name: {run_name}")
+log_print(report_lines, f"Run directory: {run_dir}")
 log_print(report_lines, f"Data source: LOCAL FILE")
 log_print(report_lines, f"File path: {LOCAL_FILE_PATH}")
+log_print(report_lines, f"Rows to use: {DATA_ROWS_TO_USE}")
 log_print(report_lines, f"Device: {DEVICE}")
 
 log_print(report_lines, "\nSystem GPU scan results:")
@@ -820,7 +787,9 @@ if not isinstance(raw, dict) or "data" not in raw:
     raise ValueError("Invalid JSON format: expected {'data': [...]}")
 
 df = pd.DataFrame(raw["data"])
-log_print(report_lines, f"Loaded rows: {len(df)}")
+rows_in_file = len(df)
+
+log_print(report_lines, f"Rows in file: {rows_in_file}")
 log_print(report_lines, f"Columns: {df.columns.tolist()}")
 log_print(report_lines, "\nRaw head:")
 log_print(report_lines, df.head().to_string())
@@ -829,7 +798,11 @@ section(report_lines, "2. CLEAN DATA")
 df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 df = df.sort_values("timestamp").drop_duplicates(subset=["timestamp"]).reset_index(drop=True)
 df = df[["timestamp", "open", "high", "low", "close", "volume"]].copy()
-log_print(report_lines, f"Rows after cleaning: {len(df)}")
+
+if DATA_ROWS_TO_USE is not None:
+    df = df.tail(DATA_ROWS_TO_USE).reset_index(drop=True)
+
+log_print(report_lines, f"Rows after cleaning / row cap: {len(df)}")
 log_print(report_lines, f"Timestamp min: {df['timestamp'].min()}")
 log_print(report_lines, f"Timestamp max: {df['timestamp'].max()}")
 
@@ -1025,7 +998,7 @@ for seed in stable_seeds:
         verbose=True,
     )
 
-    checkpoint_path = os.path.join(RUNS_DIR, f"{run_name}_seed{seed}_best.pt")
+    checkpoint_path = os.path.join(run_dir, f"{run_name}_seed{seed}_best.pt")
     torch.save(model.state_dict(), checkpoint_path)
     final_checkpoints.append(checkpoint_path)
 
@@ -1047,7 +1020,6 @@ test_targets = y_test.astype(int)
 
 test_metrics = compute_metrics(test_targets, test_preds, test_probs_ens)
 
-# Diagnostic only: do not use this to pick your official model.
 flipped_auc = roc_auc_score(test_targets, 1.0 - test_probs_ens)
 
 log_print(report_lines, f"Test Accuracy:           {test_metrics['accuracy']:.6f}")

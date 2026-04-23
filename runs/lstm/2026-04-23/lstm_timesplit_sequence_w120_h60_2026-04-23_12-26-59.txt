@@ -1,0 +1,457 @@
+
+====================================================================================================
+RUN METADATA
+====================================================================================================
+Run timestamp: 2026-04-23_12-26-59
+Run name: lstm_timesplit_sequence_w120_h60_2026-04-23_12-26-59
+Run directory: runs\lstm\2026-04-23
+Data source: LOCAL FILE
+File path: data/stock-data.json
+Rows to use: 50000
+Device: cuda
+
+System GPU scan results:
+GPU 0: NVIDIA GeForce RTX 3070 Ti | CC 8.6 | 8192 MB | SUPPORTED
+GPU 1: NVIDIA GeForce GT 1030 | CC 6.1 | 2048 MB | unsupported
+
+Visible CUDA device count: 1
+CUDA device name: NVIDIA GeForce RTX 3070 Ti
+Selected GPU (original system index): 0 | NVIDIA GeForce RTX 3070 Ti | CC 8.6 | 8192 MB
+Window size: 120
+Prediction horizon: 60
+Label style: meaningful move direction with neutral zone dropped
+Fixed threshold override: None
+Train move quantile: 0.55
+Base features (32): ['return_1', 'return_5', 'return_15', 'return_30', 'log_return_1', 'volume_change_1', 'volume_change_5', 'high_low', 'open_close', 'body_to_range', 'upper_wick', 'lower_wick', 'rolling_std_5', 'rolling_std_20', 'rolling_std_50', 'ema_spread_5_20', 'ema_spread_10_50', 'return_std_5', 'return_std_20', 'range_std_5', 'range_std_20', 'volume_z_10', 'volume_z_30', 'momentum_5', 'momentum_20', 'momentum_30', 'rsi_14', 'session_progress', 'minute_sin', 'minute_cos', 'dow_sin', 'dow_cos']
+CV splits: 3
+CV gap: 20
+Ensemble seeds: [42, 1337, 2026]
+Min seed OOF AUC: 0.52
+Max epochs: 35
+Batch size: 512
+Max LR: 0.0005
+Weight decay: 0.0005
+Dropout: 0.35
+Hidden size: 128
+Num layers: 2
+Label smoothing: 0.02
+Early stopping patience: 6
+Clip quantiles: [0.005, 0.995]
+Threshold search range: [0.35, 0.65] with 121 steps
+
+====================================================================================================
+1. LOAD DATA
+====================================================================================================
+Rows in file: 250000
+Columns: ['symbol', 'timestamp', 'open', 'high', 'low', 'close', 'volume', 'trade_count', 'vwap', 'exchange']
+
+Raw head:
+  symbol                  timestamp    open    high     low   close    volume  trade_count        vwap exchange
+0   MSFT  2023-05-31T15:50:00-04:00  331.17  331.31  330.21  330.42  349694.0       6637.0  330.640448     None
+1   MSFT  2023-05-31T15:51:00-04:00  330.43  330.64  330.29  330.43  128091.0       2447.0  330.465777     None
+2   MSFT  2023-05-31T15:52:00-04:00  330.41  330.60  330.35  330.36  113302.0       2750.0  330.447146     None
+3   MSFT  2023-05-31T15:53:00-04:00  330.34  330.47  330.06  330.15  141516.0       3005.0  330.258079     None
+4   MSFT  2023-05-31T15:54:00-04:00  330.11  330.31  329.24  330.07  287390.0       5523.0  329.965589     None
+
+====================================================================================================
+2. CLEAN DATA
+====================================================================================================
+Rows after cleaning / row cap: 50000
+Timestamp min: 2025-06-25 18:40:00+00:00
+Timestamp max: 2025-12-31 20:59:00+00:00
+
+====================================================================================================
+3. FEATURE ENGINEERING
+====================================================================================================
+Rows after feature engineering + dropna: 49891
+
+Future return summary:
+count    49891.000000
+mean        -0.000011
+std          0.004710
+min         -0.029605
+10%         -0.004351
+25%         -0.002001
+50%         -0.000040
+75%          0.001861
+90%          0.004172
+max          0.071648
+
+Feature preview:
+                  timestamp     close  future_close  future_return  return_1  return_5  return_15  return_30  log_return_1  volume_change_1  volume_change_5  high_low  open_close  body_to_range  upper_wick  lower_wick
+0 2025-06-25 19:29:00+00:00  491.1600       495.970       0.009793 -0.000132 -0.000305  -0.000170   0.000927     -0.000132         0.227140         0.236136    0.1447     -0.0700       0.483760      0.0547       0.020
+1 2025-06-25 19:30:00+00:00  491.1600       496.710       0.011300  0.000000 -0.000336  -0.000346   0.000733      0.000000         0.132247         0.123041    0.1200      0.0300       0.250000      0.0800       0.010
+2 2025-06-25 19:31:00+00:00  491.0200       496.790       0.011751 -0.000285 -0.000773  -0.000560   0.000509     -0.000285         0.210802         1.035058    0.1800     -0.1100       0.611111      0.0000       0.070
+3 2025-06-25 19:32:00+00:00  491.1550       496.450       0.010781  0.000275 -0.000580  -0.000183   0.000540      0.000275        -0.303443        -0.145124    0.1450      0.1150       0.793103      0.0150       0.015
+4 2025-06-25 19:33:00+00:00  491.1567       496.315       0.010502  0.000003 -0.000139  -0.000515   0.000350      0.000003         0.024768         0.200856    0.1100      0.0167       0.151818      0.0833       0.010
+
+====================================================================================================
+4. SPLIT ROWS
+====================================================================================================
+Chosen move threshold (absolute future return): 0.002256
+
+Trainval rows: total=42407, neutral_dropped=23324
+Trainval rows labeled counts:
+0    10007
+1     9076
+
+Trainval rows labeled ratios:
+0    0.524393
+1    0.475607
+
+Test rows: total=7484, neutral_dropped=4812
+Test rows labeled counts:
+0    1284
+1    1388
+
+Test rows labeled ratios:
+0    0.480539
+1    0.519461
+
+====================================================================================================
+5. BUILD SEQUENCE WINDOWS
+====================================================================================================
+Trainval: rows=42407, built_windows=19007, skipped_neutral=23281
+Trainval X shape: (19007, 120, 32)
+Trainval y shape: (19007,)
+Test: rows=7484, built_windows=2627, skipped_neutral=4738
+Test X shape: (2627, 120, 32)
+Test y shape: (2627,)
+
+Sequence trainval shape: (19007, 120, 32), (19007,)
+Sequence test shape:     (2627, 120, 32), (2627,)
+
+====================================================================================================
+6. WALK-FORWARD CV
+====================================================================================================
+
+Fold 1: train=4024, stop=710, val=4751
+
+--- Training cv_fold1 | seed=42 ---
+Trainable params: 215,169
+cv_fold1 | seed=42 | epoch=001 | train_loss=0.689679 | stop_loss=0.709773 | stop_auc=0.528859 | stop_bal_acc@0.5=0.498258 | stop_acc@0.5=0.402817 | lr=5.000000e-04
+cv_fold1 | seed=42 | epoch=002 | train_loss=0.681430 | stop_loss=0.740993 | stop_auc=0.502220 | stop_bal_acc@0.5=0.497385 | stop_acc@0.5=0.408451 | lr=5.000000e-04
+cv_fold1 | seed=42 | epoch=003 | train_loss=0.669958 | stop_loss=0.794602 | stop_auc=0.483843 | stop_bal_acc@0.5=0.488604 | stop_acc@0.5=0.425352 | lr=5.000000e-04
+cv_fold1 | seed=42 | epoch=004 | train_loss=0.652156 | stop_loss=0.836386 | stop_auc=0.447764 | stop_bal_acc@0.5=0.431232 | stop_acc@0.5=0.394366 | lr=2.500000e-04
+cv_fold1 | seed=42 | epoch=005 | train_loss=0.636378 | stop_loss=0.881251 | stop_auc=0.428679 | stop_bal_acc@0.5=0.428123 | stop_acc@0.5=0.387324 | lr=2.500000e-04
+cv_fold1 | seed=42 | epoch=006 | train_loss=0.621057 | stop_loss=0.907861 | stop_auc=0.414799 | stop_bal_acc@0.5=0.442496 | stop_acc@0.5=0.395775 | lr=2.500000e-04
+cv_fold1 | seed=42 | epoch=007 | train_loss=0.601440 | stop_loss=0.992577 | stop_auc=0.430104 | stop_bal_acc@0.5=0.461409 | stop_acc@0.5=0.418310 | lr=1.250000e-04
+Early stopping for cv_fold1 | seed=42 at epoch 7
+Fold 1 | seed=42 | val_auc=0.383771 | val_bal_acc@0.5=0.496151
+
+--- Training cv_fold1 | seed=1337 ---
+Trainable params: 215,169
+cv_fold1 | seed=1337 | epoch=001 | train_loss=0.691606 | stop_loss=0.708326 | stop_auc=0.420145 | stop_bal_acc@0.5=0.497570 | stop_acc@0.5=0.412676 | lr=5.000000e-04
+cv_fold1 | seed=1337 | epoch=002 | train_loss=0.679730 | stop_loss=0.749704 | stop_auc=0.461796 | stop_bal_acc@0.5=0.490601 | stop_acc@0.5=0.407042 | lr=5.000000e-04
+cv_fold1 | seed=1337 | epoch=003 | train_loss=0.668285 | stop_loss=0.810159 | stop_auc=0.466800 | stop_bal_acc@0.5=0.410396 | stop_acc@0.5=0.353521 | lr=5.000000e-04
+cv_fold1 | seed=1337 | epoch=004 | train_loss=0.654648 | stop_loss=0.818011 | stop_auc=0.431833 | stop_bal_acc@0.5=0.453567 | stop_acc@0.5=0.418310 | lr=5.000000e-04
+cv_fold1 | seed=1337 | epoch=005 | train_loss=0.634241 | stop_loss=0.927126 | stop_auc=0.422048 | stop_bal_acc@0.5=0.465515 | stop_acc@0.5=0.422535 | lr=5.000000e-04
+cv_fold1 | seed=1337 | epoch=006 | train_loss=0.598967 | stop_loss=1.018792 | stop_auc=0.424049 | stop_bal_acc@0.5=0.455247 | stop_acc@0.5=0.418310 | lr=2.500000e-04
+cv_fold1 | seed=1337 | epoch=007 | train_loss=0.572620 | stop_loss=1.047304 | stop_auc=0.421949 | stop_bal_acc@0.5=0.468246 | stop_acc@0.5=0.446479 | lr=2.500000e-04
+cv_fold1 | seed=1337 | epoch=008 | train_loss=0.555031 | stop_loss=1.120066 | stop_auc=0.436067 | stop_bal_acc@0.5=0.511614 | stop_acc@0.5=0.477465 | lr=2.500000e-04
+cv_fold1 | seed=1337 | epoch=009 | train_loss=0.530427 | stop_loss=1.163805 | stop_auc=0.431306 | stop_bal_acc@0.5=0.508315 | stop_acc@0.5=0.478873 | lr=1.250000e-04
+Early stopping for cv_fold1 | seed=1337 at epoch 9
+Fold 1 | seed=1337 | val_auc=0.402907 | val_bal_acc@0.5=0.462622
+
+--- Training cv_fold1 | seed=2026 ---
+Trainable params: 215,169
+cv_fold1 | seed=2026 | epoch=001 | train_loss=0.688977 | stop_loss=0.715607 | stop_auc=0.444840 | stop_bal_acc@0.5=0.500000 | stop_acc@0.5=0.404225 | lr=5.000000e-04
+cv_fold1 | seed=2026 | epoch=002 | train_loss=0.679424 | stop_loss=0.750342 | stop_auc=0.439790 | stop_bal_acc@0.5=0.493027 | stop_acc@0.5=0.411268 | lr=5.000000e-04
+cv_fold1 | seed=2026 | epoch=003 | train_loss=0.667121 | stop_loss=0.828808 | stop_auc=0.462344 | stop_bal_acc@0.5=0.422838 | stop_acc@0.5=0.369014 | lr=5.000000e-04
+cv_fold1 | seed=2026 | epoch=004 | train_loss=0.650692 | stop_loss=0.827317 | stop_auc=0.422254 | stop_bal_acc@0.5=0.420532 | stop_acc@0.5=0.380282 | lr=5.000000e-04
+cv_fold1 | seed=2026 | epoch=005 | train_loss=0.624990 | stop_loss=0.972344 | stop_auc=0.398267 | stop_bal_acc@0.5=0.448596 | stop_acc@0.5=0.394366 | lr=5.000000e-04
+cv_fold1 | seed=2026 | epoch=006 | train_loss=0.585553 | stop_loss=1.083714 | stop_auc=0.344256 | stop_bal_acc@0.5=0.417925 | stop_acc@0.5=0.359155 | lr=2.500000e-04
+cv_fold1 | seed=2026 | epoch=007 | train_loss=0.565282 | stop_loss=1.126021 | stop_auc=0.352847 | stop_bal_acc@0.5=0.418609 | stop_acc@0.5=0.361972 | lr=2.500000e-04
+cv_fold1 | seed=2026 | epoch=008 | train_loss=0.551263 | stop_loss=1.188620 | stop_auc=0.358210 | stop_bal_acc@0.5=0.447476 | stop_acc@0.5=0.394366 | lr=2.500000e-04
+cv_fold1 | seed=2026 | epoch=009 | train_loss=0.535379 | stop_loss=1.243289 | stop_auc=0.346175 | stop_bal_acc@0.5=0.448658 | stop_acc@0.5=0.395775 | lr=1.250000e-04
+Early stopping for cv_fold1 | seed=2026 at epoch 9
+Fold 1 | seed=2026 | val_auc=0.414714 | val_bal_acc@0.5=0.466154
+
+Fold 2: train=8063, stop=1422, val=4751
+
+--- Training cv_fold2 | seed=42 ---
+Trainable params: 215,169
+cv_fold2 | seed=42 | epoch=001 | train_loss=0.687765 | stop_loss=0.679344 | stop_auc=0.705586 | stop_bal_acc@0.5=0.500000 | stop_acc@0.5=0.530239 | lr=5.000000e-04
+cv_fold2 | seed=42 | epoch=002 | train_loss=0.677865 | stop_loss=0.663819 | stop_auc=0.673327 | stop_bal_acc@0.5=0.571142 | stop_acc@0.5=0.592827 | lr=5.000000e-04
+cv_fold2 | seed=42 | epoch=003 | train_loss=0.656622 | stop_loss=0.692608 | stop_auc=0.593017 | stop_bal_acc@0.5=0.583352 | stop_acc@0.5=0.583685 | lr=5.000000e-04
+cv_fold2 | seed=42 | epoch=004 | train_loss=0.618038 | stop_loss=0.779956 | stop_auc=0.543304 | stop_bal_acc@0.5=0.553144 | stop_acc@0.5=0.549930 | lr=2.500000e-04
+cv_fold2 | seed=42 | epoch=005 | train_loss=0.573666 | stop_loss=0.886168 | stop_auc=0.466331 | stop_bal_acc@0.5=0.492042 | stop_acc@0.5=0.491561 | lr=2.500000e-04
+cv_fold2 | seed=42 | epoch=006 | train_loss=0.533362 | stop_loss=0.899231 | stop_auc=0.488213 | stop_bal_acc@0.5=0.520754 | stop_acc@0.5=0.523910 | lr=2.500000e-04
+cv_fold2 | seed=42 | epoch=007 | train_loss=0.504751 | stop_loss=1.010417 | stop_auc=0.468273 | stop_bal_acc@0.5=0.496545 | stop_acc@0.5=0.501406 | lr=1.250000e-04
+Early stopping for cv_fold2 | seed=42 at epoch 7
+Fold 2 | seed=42 | val_auc=0.459588 | val_bal_acc@0.5=0.500160
+
+--- Training cv_fold2 | seed=1337 ---
+Trainable params: 215,169
+cv_fold2 | seed=1337 | epoch=001 | train_loss=0.688384 | stop_loss=0.675641 | stop_auc=0.696930 | stop_bal_acc@0.5=0.500000 | stop_acc@0.5=0.530239 | lr=5.000000e-04
+cv_fold2 | seed=1337 | epoch=002 | train_loss=0.678347 | stop_loss=0.659370 | stop_auc=0.677982 | stop_bal_acc@0.5=0.588397 | stop_acc@0.5=0.607595 | lr=5.000000e-04
+cv_fold2 | seed=1337 | epoch=003 | train_loss=0.657545 | stop_loss=0.689601 | stop_auc=0.579552 | stop_bal_acc@0.5=0.546052 | stop_acc@0.5=0.547117 | lr=5.000000e-04
+cv_fold2 | seed=1337 | epoch=004 | train_loss=0.615908 | stop_loss=0.806099 | stop_auc=0.546788 | stop_bal_acc@0.5=0.509369 | stop_acc@0.5=0.509845 | lr=2.500000e-04
+cv_fold2 | seed=1337 | epoch=005 | train_loss=0.576097 | stop_loss=0.848509 | stop_auc=0.526835 | stop_bal_acc@0.5=0.517085 | stop_acc@0.5=0.514768 | lr=2.500000e-04
+cv_fold2 | seed=1337 | epoch=006 | train_loss=0.538490 | stop_loss=0.883028 | stop_auc=0.542949 | stop_bal_acc@0.5=0.555612 | stop_acc@0.5=0.556259 | lr=2.500000e-04
+cv_fold2 | seed=1337 | epoch=007 | train_loss=0.497185 | stop_loss=0.962959 | stop_auc=0.508523 | stop_bal_acc@0.5=0.522467 | stop_acc@0.5=0.526723 | lr=1.250000e-04
+Early stopping for cv_fold2 | seed=1337 at epoch 7
+Fold 2 | seed=1337 | val_auc=0.471293 | val_bal_acc@0.5=0.500820
+
+--- Training cv_fold2 | seed=2026 ---
+Trainable params: 215,169
+cv_fold2 | seed=2026 | epoch=001 | train_loss=0.687290 | stop_loss=0.676025 | stop_auc=0.714968 | stop_bal_acc@0.5=0.500749 | stop_acc@0.5=0.530942 | lr=5.000000e-04
+cv_fold2 | seed=2026 | epoch=002 | train_loss=0.678055 | stop_loss=0.664012 | stop_auc=0.668288 | stop_bal_acc@0.5=0.618653 | stop_acc@0.5=0.633615 | lr=5.000000e-04
+cv_fold2 | seed=2026 | epoch=003 | train_loss=0.655508 | stop_loss=0.668684 | stop_auc=0.638092 | stop_bal_acc@0.5=0.608696 | stop_acc@0.5=0.608298 | lr=5.000000e-04
+cv_fold2 | seed=2026 | epoch=004 | train_loss=0.615703 | stop_loss=0.762183 | stop_auc=0.568916 | stop_bal_acc@0.5=0.542710 | stop_acc@0.5=0.541491 | lr=2.500000e-04
+cv_fold2 | seed=2026 | epoch=005 | train_loss=0.577002 | stop_loss=0.859159 | stop_auc=0.519914 | stop_bal_acc@0.5=0.523164 | stop_acc@0.5=0.523207 | lr=2.500000e-04
+cv_fold2 | seed=2026 | epoch=006 | train_loss=0.549335 | stop_loss=0.886903 | stop_auc=0.514386 | stop_bal_acc@0.5=0.506369 | stop_acc@0.5=0.504219 | lr=2.500000e-04
+cv_fold2 | seed=2026 | epoch=007 | train_loss=0.518027 | stop_loss=0.884049 | stop_auc=0.541944 | stop_bal_acc@0.5=0.526519 | stop_acc@0.5=0.525316 | lr=1.250000e-04
+Early stopping for cv_fold2 | seed=2026 at epoch 7
+Fold 2 | seed=2026 | val_auc=0.451969 | val_bal_acc@0.5=0.497131
+
+Fold 3: train=12101, stop=2135, val=4751
+
+--- Training cv_fold3 | seed=42 ---
+Trainable params: 215,169
+cv_fold3 | seed=42 | epoch=001 | train_loss=0.690318 | stop_loss=0.697536 | stop_auc=0.507270 | stop_bal_acc@0.5=0.523903 | stop_acc@0.5=0.511475 | lr=5.000000e-04
+cv_fold3 | seed=42 | epoch=002 | train_loss=0.679242 | stop_loss=0.767560 | stop_auc=0.463284 | stop_bal_acc@0.5=0.473874 | stop_acc@0.5=0.473536 | lr=5.000000e-04
+cv_fold3 | seed=42 | epoch=003 | train_loss=0.643924 | stop_loss=0.841286 | stop_auc=0.552784 | stop_bal_acc@0.5=0.517796 | stop_acc@0.5=0.513817 | lr=5.000000e-04
+cv_fold3 | seed=42 | epoch=004 | train_loss=0.590862 | stop_loss=0.899581 | stop_auc=0.561729 | stop_bal_acc@0.5=0.516746 | stop_acc@0.5=0.510070 | lr=5.000000e-04
+cv_fold3 | seed=42 | epoch=005 | train_loss=0.545435 | stop_loss=0.974651 | stop_auc=0.553894 | stop_bal_acc@0.5=0.495203 | stop_acc@0.5=0.492272 | lr=5.000000e-04
+cv_fold3 | seed=42 | epoch=006 | train_loss=0.497438 | stop_loss=1.078075 | stop_auc=0.545078 | stop_bal_acc@0.5=0.478570 | stop_acc@0.5=0.472600 | lr=5.000000e-04
+cv_fold3 | seed=42 | epoch=007 | train_loss=0.463303 | stop_loss=1.219800 | stop_auc=0.533942 | stop_bal_acc@0.5=0.466250 | stop_acc@0.5=0.463700 | lr=2.500000e-04
+cv_fold3 | seed=42 | epoch=008 | train_loss=0.426823 | stop_loss=1.238732 | stop_auc=0.542943 | stop_bal_acc@0.5=0.472653 | stop_acc@0.5=0.468384 | lr=2.500000e-04
+cv_fold3 | seed=42 | epoch=009 | train_loss=0.397141 | stop_loss=1.147892 | stop_auc=0.614746 | stop_bal_acc@0.5=0.534097 | stop_acc@0.5=0.528337 | lr=2.500000e-04
+cv_fold3 | seed=42 | epoch=010 | train_loss=0.372411 | stop_loss=1.215495 | stop_auc=0.591541 | stop_bal_acc@0.5=0.523253 | stop_acc@0.5=0.518033 | lr=2.500000e-04
+cv_fold3 | seed=42 | epoch=011 | train_loss=0.359796 | stop_loss=1.257519 | stop_auc=0.560532 | stop_bal_acc@0.5=0.501208 | stop_acc@0.5=0.498829 | lr=2.500000e-04
+cv_fold3 | seed=42 | epoch=012 | train_loss=0.343288 | stop_loss=1.392755 | stop_auc=0.551829 | stop_bal_acc@0.5=0.495523 | stop_acc@0.5=0.492740 | lr=1.250000e-04
+cv_fold3 | seed=42 | epoch=013 | train_loss=0.321861 | stop_loss=1.247827 | stop_auc=0.631482 | stop_bal_acc@0.5=0.568286 | stop_acc@0.5=0.565808 | lr=1.250000e-04
+cv_fold3 | seed=42 | epoch=014 | train_loss=0.315957 | stop_loss=1.302215 | stop_auc=0.607772 | stop_bal_acc@0.5=0.559704 | stop_acc@0.5=0.557845 | lr=1.250000e-04
+cv_fold3 | seed=42 | epoch=015 | train_loss=0.302156 | stop_loss=1.312424 | stop_auc=0.604580 | stop_bal_acc@0.5=0.536786 | stop_acc@0.5=0.532553 | lr=1.250000e-04
+cv_fold3 | seed=42 | epoch=016 | train_loss=0.294213 | stop_loss=1.361523 | stop_auc=0.583121 | stop_bal_acc@0.5=0.523778 | stop_acc@0.5=0.519906 | lr=6.250000e-05
+cv_fold3 | seed=42 | epoch=017 | train_loss=0.282182 | stop_loss=1.358218 | stop_auc=0.578555 | stop_bal_acc@0.5=0.530038 | stop_acc@0.5=0.526932 | lr=6.250000e-05
+cv_fold3 | seed=42 | epoch=018 | train_loss=0.276044 | stop_loss=1.361028 | stop_auc=0.577108 | stop_bal_acc@0.5=0.525069 | stop_acc@0.5=0.521311 | lr=6.250000e-05
+cv_fold3 | seed=42 | epoch=019 | train_loss=0.271294 | stop_loss=1.352276 | stop_auc=0.582142 | stop_bal_acc@0.5=0.528533 | stop_acc@0.5=0.524590 | lr=3.125000e-05
+Early stopping for cv_fold3 | seed=42 at epoch 19
+Fold 3 | seed=42 | val_auc=0.559351 | val_bal_acc@0.5=0.559146
+
+--- Training cv_fold3 | seed=1337 ---
+Trainable params: 215,169
+cv_fold3 | seed=1337 | epoch=001 | train_loss=0.690153 | stop_loss=0.693500 | stop_auc=0.544632 | stop_bal_acc@0.5=0.520536 | stop_acc@0.5=0.510070 | lr=5.000000e-04
+cv_fold3 | seed=1337 | epoch=002 | train_loss=0.677784 | stop_loss=0.742534 | stop_auc=0.508658 | stop_bal_acc@0.5=0.501773 | stop_acc@0.5=0.502108 | lr=5.000000e-04
+cv_fold3 | seed=1337 | epoch=003 | train_loss=0.642841 | stop_loss=0.828248 | stop_auc=0.515033 | stop_bal_acc@0.5=0.492591 | stop_acc@0.5=0.485714 | lr=5.000000e-04
+cv_fold3 | seed=1337 | epoch=004 | train_loss=0.597090 | stop_loss=0.923512 | stop_auc=0.563922 | stop_bal_acc@0.5=0.501713 | stop_acc@0.5=0.496487 | lr=5.000000e-04
+cv_fold3 | seed=1337 | epoch=005 | train_loss=0.560812 | stop_loss=1.015245 | stop_auc=0.556971 | stop_bal_acc@0.5=0.489602 | stop_acc@0.5=0.485246 | lr=5.000000e-04
+cv_fold3 | seed=1337 | epoch=006 | train_loss=0.508791 | stop_loss=1.111738 | stop_auc=0.550393 | stop_bal_acc@0.5=0.495181 | stop_acc@0.5=0.489930 | lr=5.000000e-04
+cv_fold3 | seed=1337 | epoch=007 | train_loss=0.473438 | stop_loss=1.158052 | stop_auc=0.529884 | stop_bal_acc@0.5=0.476611 | stop_acc@0.5=0.471663 | lr=2.500000e-04
+cv_fold3 | seed=1337 | epoch=008 | train_loss=0.430510 | stop_loss=1.237168 | stop_auc=0.494064 | stop_bal_acc@0.5=0.438565 | stop_acc@0.5=0.436066 | lr=2.500000e-04
+cv_fold3 | seed=1337 | epoch=009 | train_loss=0.402686 | stop_loss=1.205418 | stop_auc=0.550129 | stop_bal_acc@0.5=0.481389 | stop_acc@0.5=0.478689 | lr=2.500000e-04
+cv_fold3 | seed=1337 | epoch=010 | train_loss=0.376494 | stop_loss=1.219476 | stop_auc=0.550333 | stop_bal_acc@0.5=0.499848 | stop_acc@0.5=0.499297 | lr=1.250000e-04
+Early stopping for cv_fold3 | seed=1337 at epoch 10
+Fold 3 | seed=1337 | val_auc=0.433561 | val_bal_acc@0.5=0.475720
+
+--- Training cv_fold3 | seed=2026 ---
+Trainable params: 215,169
+cv_fold3 | seed=2026 | epoch=001 | train_loss=0.689410 | stop_loss=0.701115 | stop_auc=0.505803 | stop_bal_acc@0.5=0.511912 | stop_acc@0.5=0.502576 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=002 | train_loss=0.675619 | stop_loss=0.792521 | stop_auc=0.440318 | stop_bal_acc@0.5=0.432221 | stop_acc@0.5=0.429977 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=003 | train_loss=0.643973 | stop_loss=0.831159 | stop_auc=0.526125 | stop_bal_acc@0.5=0.512582 | stop_acc@0.5=0.507260 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=004 | train_loss=0.603378 | stop_loss=0.956788 | stop_auc=0.528207 | stop_bal_acc@0.5=0.498555 | stop_acc@0.5=0.492740 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=005 | train_loss=0.570364 | stop_loss=0.992249 | stop_auc=0.554057 | stop_bal_acc@0.5=0.505935 | stop_acc@0.5=0.499766 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=006 | train_loss=0.524717 | stop_loss=1.064336 | stop_auc=0.538822 | stop_bal_acc@0.5=0.494254 | stop_acc@0.5=0.486651 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=007 | train_loss=0.495023 | stop_loss=1.119596 | stop_auc=0.540616 | stop_bal_acc@0.5=0.502168 | stop_acc@0.5=0.495082 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=008 | train_loss=0.465932 | stop_loss=1.132773 | stop_auc=0.566492 | stop_bal_acc@0.5=0.508022 | stop_acc@0.5=0.504450 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=009 | train_loss=0.427164 | stop_loss=1.131671 | stop_auc=0.563179 | stop_bal_acc@0.5=0.506847 | stop_acc@0.5=0.502108 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=010 | train_loss=0.373822 | stop_loss=1.272055 | stop_auc=0.565925 | stop_bal_acc@0.5=0.502680 | stop_acc@0.5=0.501171 | lr=5.000000e-04
+cv_fold3 | seed=2026 | epoch=011 | train_loss=0.332407 | stop_loss=1.325563 | stop_auc=0.552627 | stop_bal_acc@0.5=0.504200 | stop_acc@0.5=0.504450 | lr=2.500000e-04
+cv_fold3 | seed=2026 | epoch=012 | train_loss=0.296458 | stop_loss=1.297320 | stop_auc=0.597478 | stop_bal_acc@0.5=0.549187 | stop_acc@0.5=0.549415 | lr=2.500000e-04
+cv_fold3 | seed=2026 | epoch=013 | train_loss=0.277261 | stop_loss=1.316170 | stop_auc=0.624564 | stop_bal_acc@0.5=0.569633 | stop_acc@0.5=0.569555 | lr=2.500000e-04
+cv_fold3 | seed=2026 | epoch=014 | train_loss=0.265362 | stop_loss=1.243505 | stop_auc=0.647741 | stop_bal_acc@0.5=0.590572 | stop_acc@0.5=0.589696 | lr=2.500000e-04
+cv_fold3 | seed=2026 | epoch=015 | train_loss=0.257086 | stop_loss=1.335751 | stop_auc=0.619438 | stop_bal_acc@0.5=0.582443 | stop_acc@0.5=0.582201 | lr=2.500000e-04
+cv_fold3 | seed=2026 | epoch=016 | train_loss=0.253045 | stop_loss=1.372408 | stop_auc=0.621930 | stop_bal_acc@0.5=0.549132 | stop_acc@0.5=0.547073 | lr=2.500000e-04
+cv_fold3 | seed=2026 | epoch=017 | train_loss=0.234801 | stop_loss=1.331097 | stop_auc=0.643138 | stop_bal_acc@0.5=0.559515 | stop_acc@0.5=0.557377 | lr=1.250000e-04
+cv_fold3 | seed=2026 | epoch=018 | train_loss=0.225481 | stop_loss=1.360403 | stop_auc=0.653218 | stop_bal_acc@0.5=0.571930 | stop_acc@0.5=0.570023 | lr=1.250000e-04
+cv_fold3 | seed=2026 | epoch=019 | train_loss=0.219662 | stop_loss=1.331478 | stop_auc=0.633997 | stop_bal_acc@0.5=0.582254 | stop_acc@0.5=0.581733 | lr=1.250000e-04
+cv_fold3 | seed=2026 | epoch=020 | train_loss=0.216221 | stop_loss=1.395422 | stop_auc=0.647689 | stop_bal_acc@0.5=0.577055 | stop_acc@0.5=0.576112 | lr=1.250000e-04
+cv_fold3 | seed=2026 | epoch=021 | train_loss=0.208064 | stop_loss=1.357559 | stop_auc=0.650629 | stop_bal_acc@0.5=0.576126 | stop_acc@0.5=0.574707 | lr=6.250000e-05
+cv_fold3 | seed=2026 | epoch=022 | train_loss=0.201533 | stop_loss=1.379862 | stop_auc=0.648632 | stop_bal_acc@0.5=0.570333 | stop_acc@0.5=0.569087 | lr=6.250000e-05
+cv_fold3 | seed=2026 | epoch=023 | train_loss=0.196896 | stop_loss=1.429482 | stop_auc=0.632684 | stop_bal_acc@0.5=0.554602 | stop_acc@0.5=0.554098 | lr=6.250000e-05
+cv_fold3 | seed=2026 | epoch=024 | train_loss=0.195883 | stop_loss=1.416621 | stop_auc=0.635216 | stop_bal_acc@0.5=0.556675 | stop_acc@0.5=0.555972 | lr=3.125000e-05
+Early stopping for cv_fold3 | seed=2026 at epoch 24
+Fold 3 | seed=2026 | val_auc=0.484462 | val_bal_acc@0.5=0.485030
+
+====================================================================================================
+7. OOF SEED SELECTION
+====================================================================================================
+ seed  oof_auc  oof_bal_acc_0.5  covered_samples
+   42 0.486143         0.513221            14253
+ 2026 0.467741         0.469301            14253
+ 1337 0.446257         0.468806            14253
+
+Stable seeds selected: [42]
+Best threshold from OOF validation: 0.4500
+
+Top threshold candidates:
+ threshold  accuracy  balanced_accuracy       f1  positive_rate
+    0.4500  0.476461           0.482848 0.528020       0.633340
+    0.4525  0.474918           0.480223 0.516912       0.611029
+    0.4625  0.474426           0.474731 0.465578       0.507542
+    0.4600  0.472532           0.474212 0.478785       0.536098
+    0.4750  0.480601           0.473890 0.380139       0.362029
+    0.4550  0.469585           0.473679 0.500595       0.586192
+    0.4575  0.470778           0.473630 0.489337       0.560443
+    0.4650  0.472602           0.471445 0.446751       0.477373
+    0.4675  0.470217           0.467665 0.426956       0.448607
+    0.4725  0.472743           0.467505 0.393120       0.392900
+    0.4700  0.471059           0.467092 0.409123       0.419280
+
+====================================================================================================
+8. FINAL TRAINING ON TRAINVAL
+====================================================================================================
+
+--- Training final | seed=42 ---
+Trainable params: 215,169
+final | seed=42 | epoch=001 | train_loss=0.688955 | stop_loss=0.710183 | stop_auc=0.427039 | stop_bal_acc@0.5=0.460544 | stop_acc@0.5=0.466854 | lr=5.000000e-04
+final | seed=42 | epoch=002 | train_loss=0.672868 | stop_loss=0.713833 | stop_auc=0.520657 | stop_bal_acc@0.5=0.527256 | stop_acc@0.5=0.518765 | lr=5.000000e-04
+final | seed=42 | epoch=003 | train_loss=0.643817 | stop_loss=0.837308 | stop_auc=0.488051 | stop_bal_acc@0.5=0.496391 | stop_acc@0.5=0.494914 | lr=5.000000e-04
+final | seed=42 | epoch=004 | train_loss=0.587979 | stop_loss=0.920107 | stop_auc=0.519476 | stop_bal_acc@0.5=0.543682 | stop_acc@0.5=0.542617 | lr=5.000000e-04
+final | seed=42 | epoch=005 | train_loss=0.538210 | stop_loss=1.094758 | stop_auc=0.472243 | stop_bal_acc@0.5=0.490398 | stop_acc@0.5=0.492108 | lr=2.500000e-04
+final | seed=42 | epoch=006 | train_loss=0.479545 | stop_loss=1.270517 | stop_auc=0.455148 | stop_bal_acc@0.5=0.488364 | stop_acc@0.5=0.488951 | lr=2.500000e-04
+final | seed=42 | epoch=007 | train_loss=0.446211 | stop_loss=1.350338 | stop_auc=0.465101 | stop_bal_acc@0.5=0.492571 | stop_acc@0.5=0.494213 | lr=2.500000e-04
+final | seed=42 | epoch=008 | train_loss=0.423035 | stop_loss=1.351477 | stop_auc=0.477490 | stop_bal_acc@0.5=0.522370 | stop_acc@0.5=0.524728 | lr=1.250000e-04
+Early stopping for final | seed=42 at epoch 8
+Final seed=42 | best_epoch=2 | best_stop_auc=0.520657 | best_stop_bal_acc=0.527256
+
+====================================================================================================
+9. FINAL TEST EVALUATION
+====================================================================================================
+Test Accuracy:           0.488009
+Test Balanced Accuracy:  0.468010
+Test F1:                 0.628761
+Test Precision:          0.509620
+Test Recall:             0.820605
+Test ROC-AUC:            0.448973
+Test AP:                 0.503879
+Diagnostic flipped ROC-AUC (do not tune on this): 0.551027
+
+Test Classification Report:
+              precision    recall  f1-score   support
+
+           0     0.3648    0.1154    0.1754      1239
+           1     0.5096    0.8206    0.6288      1388
+
+    accuracy                         0.4880      2627
+   macro avg     0.4372    0.4680    0.4021      2627
+weighted avg     0.4413    0.4880    0.4149      2627
+
+Test Confusion Matrix:
+[[ 143 1096]
+ [ 249 1139]]
+
+Probability diagnostics:
+Test probs mean=0.525152 std=0.087473 min=0.159612 max=0.748343
+
+====================================================================================================
+10. FEATURE IMPORTANCE APPROXIMATION
+====================================================================================================
+Skipped for the current LSTM version.
+The previous feature-importance method was specific to the MLP architecture.
+
+====================================================================================================
+11. SAMPLE PREDICTIONS
+====================================================================================================
+Saved test predictions CSV to: runs\lstm\2026-04-23\lstm_timesplit_sequence_w120_h60_2026-04-23_12-26-59_test_predictions.csv
+
+First 40 test predictions:
+                timestamp  future_return  actual  predicted  prob_up  correct
+2025-12-02 20:45:00+00:00      -0.025995       0          1 0.480633        0
+2025-12-02 20:46:00+00:00      -0.025798       0          1 0.469962        0
+2025-12-02 20:47:00+00:00      -0.025809       0          1 0.463879        0
+2025-12-02 20:48:00+00:00      -0.024044       0          1 0.457848        0
+2025-12-02 20:49:00+00:00      -0.024852       0          1 0.452552        0
+2025-12-02 20:50:00+00:00      -0.025050       0          0 0.429889        1
+2025-12-02 20:51:00+00:00      -0.025209       0          0 0.415979        1
+2025-12-02 20:52:00+00:00      -0.025418       0          0 0.402851        1
+2025-12-02 20:53:00+00:00      -0.024280       0          0 0.392003        1
+2025-12-02 20:54:00+00:00      -0.023085       0          0 0.383701        1
+2025-12-02 20:55:00+00:00      -0.022901       0          0 0.373733        1
+2025-12-02 20:56:00+00:00      -0.023009       0          0 0.371208        1
+2025-12-02 20:57:00+00:00      -0.023494       0          0 0.371611        1
+2025-12-02 20:58:00+00:00      -0.024020       0          0 0.366103        1
+2025-12-02 20:59:00+00:00      -0.023956       0          0 0.351317        1
+2025-12-03 14:33:00+00:00       0.010829       1          1 0.519307        1
+2025-12-03 14:34:00+00:00       0.015393       1          1 0.566049        1
+2025-12-03 14:35:00+00:00       0.012616       1          1 0.596067        1
+2025-12-03 14:36:00+00:00       0.011702       1          1 0.614918        1
+2025-12-03 14:37:00+00:00       0.012426       1          1 0.642853        1
+2025-12-03 14:38:00+00:00       0.010867       1          1 0.668098        1
+2025-12-03 14:39:00+00:00       0.011363       1          1 0.681171        1
+2025-12-03 14:40:00+00:00       0.012760       1          1 0.690918        1
+2025-12-03 14:41:00+00:00       0.011283       1          1 0.693892        1
+2025-12-03 14:42:00+00:00       0.011224       1          1 0.693013        1
+2025-12-03 14:43:00+00:00       0.013486       1          1 0.693973        1
+2025-12-03 14:44:00+00:00       0.012867       1          1 0.695377        1
+2025-12-03 14:45:00+00:00       0.011554       1          1 0.694787        1
+2025-12-03 14:46:00+00:00       0.010411       1          1 0.692106        1
+2025-12-03 14:47:00+00:00       0.010869       1          1 0.691387        1
+2025-12-03 14:48:00+00:00       0.013527       1          1 0.691618        1
+2025-12-03 14:49:00+00:00       0.012935       1          1 0.689460        1
+2025-12-03 14:50:00+00:00       0.012218       1          1 0.683454        1
+2025-12-03 14:51:00+00:00       0.011016       1          1 0.665674        1
+2025-12-03 14:52:00+00:00       0.012063       1          1 0.663210        1
+2025-12-03 14:53:00+00:00       0.011890       1          1 0.655640        1
+2025-12-03 14:54:00+00:00       0.010698       1          1 0.643469        1
+2025-12-03 14:55:00+00:00       0.011005       1          1 0.642183        1
+2025-12-03 14:56:00+00:00       0.008911       1          1 0.636759        1
+2025-12-03 14:57:00+00:00       0.010651       1          1 0.631907        1
+
+Top 40 most confident wrong predictions:
+                timestamp  future_return  actual  predicted  prob_up  correct  confidence
+2025-12-10 15:35:00+00:00       0.002541       1          0 0.159612        0    0.840388
+2025-12-10 15:36:00+00:00       0.003582       1          0 0.165543        0    0.834457
+2025-12-10 15:37:00+00:00       0.003959       1          0 0.172506        0    0.827494
+2025-12-03 15:21:00+00:00       0.005065       1          0 0.176858        0    0.823142
+2025-12-03 15:20:00+00:00       0.004101       1          0 0.177636        0    0.822364
+2025-12-03 15:22:00+00:00       0.004239       1          0 0.179383        0    0.820617
+2025-12-10 15:38:00+00:00       0.004410       1          0 0.182424        0    0.817576
+2025-12-03 15:19:00+00:00       0.004595       1          0 0.183727        0    0.816273
+2025-12-31 15:59:00+00:00       0.002300       1          0 0.184691        0    0.815309
+2025-12-03 15:23:00+00:00       0.003199       1          0 0.184716        0    0.815284
+2025-12-10 15:39:00+00:00       0.003015       1          0 0.187772        0    0.812228
+2025-12-31 15:57:00+00:00       0.002280       1          0 0.187931        0    0.812069
+2025-12-31 15:56:00+00:00       0.002487       1          0 0.190267        0    0.809733
+2025-12-31 15:55:00+00:00       0.002693       1          0 0.191724        0    0.808276
+2025-12-03 15:24:00+00:00       0.003304       1          0 0.192320        0    0.807680
+2025-12-03 15:18:00+00:00       0.002928       1          0 0.196886        0    0.803114
+2025-12-03 15:26:00+00:00       0.002424       1          0 0.199063        0    0.800937
+2025-12-10 15:40:00+00:00       0.003728       1          0 0.200739        0    0.799261
+2025-12-10 15:41:00+00:00       0.002995       1          0 0.209931        0    0.790069
+2025-12-03 15:27:00+00:00       0.003158       1          0 0.210053        0    0.789947
+2025-12-10 15:42:00+00:00       0.002880       1          0 0.218300        0    0.781700
+2025-12-03 15:17:00+00:00       0.004264       1          0 0.218493        0    0.781507
+2025-12-03 15:28:00+00:00       0.003952       1          0 0.221648        0    0.778352
+2025-12-10 15:43:00+00:00       0.003225       1          0 0.226117        0    0.773883
+2025-12-10 15:44:00+00:00       0.002650       1          0 0.230237        0    0.769763
+2025-12-03 15:29:00+00:00       0.003847       1          0 0.231194        0    0.768806
+2025-12-10 15:45:00+00:00       0.002658       1          0 0.237211        0    0.762789
+2025-12-03 15:16:00+00:00       0.004693       1          0 0.238711        0    0.761289
+2025-12-03 15:30:00+00:00       0.003948       1          0 0.242370        0    0.757630
+2025-12-10 15:46:00+00:00       0.003362       1          0 0.247558        0    0.752442
+2025-12-03 20:57:00+00:00      -0.004301       0          1 0.748343        0    0.748343
+2025-12-03 20:56:00+00:00      -0.002955       0          1 0.747749        0    0.747749
+2025-12-03 15:31:00+00:00       0.004184       1          0 0.253250        0    0.746750
+2025-12-10 15:47:00+00:00       0.002315       1          0 0.253387        0    0.746613
+2025-12-03 20:54:00+00:00      -0.002567       0          1 0.746195        0    0.746195
+2025-12-10 16:12:00+00:00       0.002323       1          0 0.256066        0    0.743934
+2025-12-10 15:49:00+00:00       0.002324       1          0 0.256104        0    0.743896
+2025-12-10 15:48:00+00:00       0.002486       1          0 0.256507        0    0.743493
+2025-12-10 16:11:00+00:00       0.003026       1          0 0.258218        0    0.741782
+2025-12-03 15:15:00+00:00       0.004390       1          0 0.259500        0    0.740500
+
+====================================================================================================
+12. AUTO NOTES
+====================================================================================================
+1. Still below the target. Next levers: TRAIN_MOVE_QUANTILE=0.50, WINDOW=90, or PREDICTION_HORIZON=30.
+2. Warning: test ranking appears directionally inverted versus the learned mapping. Check regime shift and label stability.
+3. This file now keeps full sequence windows instead of compressing them into summary vectors before modeling.
+4. This file uses walk-forward validation and OOF threshold selection, which is safer than picking one contiguous validation slice.
+5. If this still saturates, the next stronger comparison could be a GRU or a larger/tuned LSTM on the same target logic.
+
+====================================================================================================
+13. SAVE REPORT
+====================================================================================================
