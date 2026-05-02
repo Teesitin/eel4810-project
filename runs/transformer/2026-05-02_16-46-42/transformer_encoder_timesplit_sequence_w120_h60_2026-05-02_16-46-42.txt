@@ -1,0 +1,1283 @@
+
+====================================================================================================
+RUN METADATA
+====================================================================================================
+Run timestamp: 2026-05-02_16-46-42
+Run name: transformer_encoder_timesplit_sequence_w120_h60_2026-05-02_16-46-42
+Run directory: runs\transformer\2026-05-02_16-46-42
+Data source: LOCAL FILE
+File path: data/stock-data.json
+Rows to use: None
+Device: cuda
+
+System GPU scan results:
+GPU 0: NVIDIA GeForce RTX 3070 Ti | CC 8.6 | 8192 MB | SUPPORTED
+GPU 1: NVIDIA GeForce GT 1030 | CC 6.1 | 2048 MB | unsupported
+
+Visible CUDA device count: 1
+CUDA device name: NVIDIA GeForce RTX 3070 Ti
+Selected GPU (original system index): 0 | NVIDIA GeForce RTX 3070 Ti | CC 8.6 | 8192 MB
+Window size: 120
+Prediction horizon: 60
+Label style: meaningful move direction with neutral zone dropped
+Fixed threshold override: None
+Train move quantile: 0.55
+Base features (32): ['return_1', 'return_5', 'return_15', 'return_30', 'log_return_1', 'volume_change_1', 'volume_change_5', 'high_low', 'open_close', 'body_to_range', 'upper_wick', 'lower_wick', 'rolling_std_5', 'rolling_std_20', 'rolling_std_50', 'ema_spread_5_20', 'ema_spread_10_50', 'return_std_5', 'return_std_20', 'range_std_5', 'range_std_20', 'volume_z_10', 'volume_z_30', 'momentum_5', 'momentum_20', 'momentum_30', 'rsi_14', 'session_progress', 'minute_sin', 'minute_cos', 'dow_sin', 'dow_cos']
+CV splits: 3
+CV gap: 20
+Ensemble seeds: [42, 1337, 2026, 777, 31415, 123, 999, 5555, 8080, 2718]
+Min seed OOF AUC: 0.52
+Max epochs: 32
+Batch size: 256
+Max LR: 0.00045
+Weight decay: 0.0006
+Dropout: 0.36
+D model: 128
+Attention heads: 8
+Num encoder layers: 3
+Feedforward size: 256
+Label smoothing: 0.02
+Early stopping patience: 6
+Clip quantiles: [0.005, 0.995]
+Threshold search range: [0.35, 0.65] with 121 steps
+
+====================================================================================================
+1. LOAD DATA
+====================================================================================================
+Rows in file: 250000
+Columns: ['symbol', 'timestamp', 'open', 'high', 'low', 'close', 'volume', 'trade_count', 'vwap', 'exchange']
+
+Raw head:
+  symbol                  timestamp    open    high     low   close    volume  trade_count        vwap exchange
+0   MSFT  2023-05-31T15:50:00-04:00  331.17  331.31  330.21  330.42  349694.0       6637.0  330.640448     None
+1   MSFT  2023-05-31T15:51:00-04:00  330.43  330.64  330.29  330.43  128091.0       2447.0  330.465777     None
+2   MSFT  2023-05-31T15:52:00-04:00  330.41  330.60  330.35  330.36  113302.0       2750.0  330.447146     None
+3   MSFT  2023-05-31T15:53:00-04:00  330.34  330.47  330.06  330.15  141516.0       3005.0  330.258079     None
+4   MSFT  2023-05-31T15:54:00-04:00  330.11  330.31  329.24  330.07  287390.0       5523.0  329.965589     None
+
+====================================================================================================
+2. CLEAN DATA
+====================================================================================================
+Rows after cleaning / row cap: 250000
+Timestamp min: 2023-05-31 19:50:00+00:00
+Timestamp max: 2025-12-31 20:59:00+00:00
+
+====================================================================================================
+3. FEATURE ENGINEERING
+====================================================================================================
+Rows after feature engineering + dropna: 249891
+
+Future return summary:
+count    249891.000000
+mean          0.000110
+std           0.005678
+min          -0.065565
+10%          -0.004949
+25%          -0.002139
+50%           0.000111
+75%           0.002319
+90%           0.005110
+max           0.116395
+
+Feature preview:
+                  timestamp    close  future_close  future_return  return_1  return_5  return_15  return_30  log_return_1  volume_change_1  volume_change_5  high_low  open_close  body_to_range  upper_wick  lower_wick
+0 2023-06-01 14:09:00+00:00  327.610      328.1200       0.001557 -0.000595 -0.001524  -0.000377   0.003451     -0.000595        -0.286383        -0.362051     0.340      -0.180       0.529412       0.000       0.160
+1 2023-06-01 14:10:00+00:00  327.140      328.3900       0.003821 -0.001435 -0.002804  -0.001099  -0.001069     -0.001436         1.232710         1.484621     0.630      -0.460       0.730159       0.090       0.080
+2 2023-06-01 14:11:00+00:00  327.235      328.7300       0.004569  0.000290 -0.003123  -0.002061  -0.001861      0.000290        -0.328783         0.264275     0.325       0.110       0.338462       0.125       0.090
+3 2023-06-01 14:12:00+00:00  327.555      328.7700       0.003709  0.000978 -0.000641  -0.002117  -0.000900      0.000977        -0.187693        -0.035194     0.429       0.230       0.536131       0.114       0.085
+4 2023-06-01 14:13:00+00:00  327.430      328.9115       0.004525 -0.000382 -0.001144  -0.002468  -0.000519     -0.000382        -0.164344        -0.274049     0.270      -0.125       0.462963       0.015       0.130
+
+====================================================================================================
+4. SPLIT ROWS
+====================================================================================================
+Chosen move threshold (absolute future return): 0.002585
+
+Trainval rows: total=212407, neutral_dropped=116824
+Trainval rows labeled counts:
+0    45836
+1    49747
+
+Trainval rows labeled ratios:
+0    0.479541
+1    0.520459
+
+Test rows: total=37484, neutral_dropped=22489
+Test rows labeled counts:
+0    7827
+1    7168
+
+Test rows labeled ratios:
+0    0.521974
+1    0.478026
+
+====================================================================================================
+5. BUILD SEQUENCE WINDOWS
+====================================================================================================
+Trainval: rows=95583, built_windows=95464, skipped_neutral=0
+Trainval X shape: (95464, 120, 32)
+Trainval y shape: (95464,)
+Test: rows=14995, built_windows=14876, skipped_neutral=0
+Test X shape: (14876, 120, 32)
+Test y shape: (14876,)
+
+Sequence trainval shape: (95464, 120, 32), (95464,)
+Sequence test shape:     (14876, 120, 32), (14876,)
+
+====================================================================================================
+6. WALK-FORWARD CV
+====================================================================================================
+
+Fold 1: train=20270, stop=3576, val=23866
+
+--- Training cv_fold1 | seed=42 ---
+Trainable params: 410,241
+cv_fold1 | seed=42 | epoch=001 | train_loss=0.691535 | stop_loss=0.691081 | stop_auc=0.537210 | stop_bal_acc@0.5=0.536407 | stop_acc@0.5=0.543904 | lr=4.500000e-04
+cv_fold1 | seed=42 | epoch=002 | train_loss=0.673337 | stop_loss=0.689268 | stop_auc=0.614437 | stop_bal_acc@0.5=0.573622 | stop_acc@0.5=0.542506 | lr=4.500000e-04
+cv_fold1 | seed=42 | epoch=003 | train_loss=0.623145 | stop_loss=0.843997 | stop_auc=0.556359 | stop_bal_acc@0.5=0.544750 | stop_acc@0.5=0.494128 | lr=4.500000e-04
+cv_fold1 | seed=42 | epoch=004 | train_loss=0.558049 | stop_loss=0.839314 | stop_auc=0.553508 | stop_bal_acc@0.5=0.555194 | stop_acc@0.5=0.532438 | lr=4.500000e-04
+cv_fold1 | seed=42 | epoch=005 | train_loss=0.505946 | stop_loss=0.937370 | stop_auc=0.491244 | stop_bal_acc@0.5=0.475444 | stop_acc@0.5=0.497483 | lr=2.250000e-04
+cv_fold1 | seed=42 | epoch=006 | train_loss=0.434011 | stop_loss=1.139378 | stop_auc=0.501027 | stop_bal_acc@0.5=0.504142 | stop_acc@0.5=0.498881 | lr=2.250000e-04
+cv_fold1 | seed=42 | epoch=007 | train_loss=0.388433 | stop_loss=1.372884 | stop_auc=0.473209 | stop_bal_acc@0.5=0.490630 | stop_acc@0.5=0.488255 | lr=2.250000e-04
+cv_fold1 | seed=42 | epoch=008 | train_loss=0.363114 | stop_loss=1.424711 | stop_auc=0.464466 | stop_bal_acc@0.5=0.476693 | stop_acc@0.5=0.487975 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=42 at epoch 8
+Fold 1 | seed=42 | val_auc=0.494377 | val_bal_acc@0.5=0.493545
+
+--- Training cv_fold1 | seed=1337 ---
+Trainable params: 410,241
+cv_fold1 | seed=1337 | epoch=001 | train_loss=0.693863 | stop_loss=0.677668 | stop_auc=0.530643 | stop_bal_acc@0.5=0.501280 | stop_acc@0.5=0.579139 | lr=4.500000e-04
+cv_fold1 | seed=1337 | epoch=002 | train_loss=0.682001 | stop_loss=0.715061 | stop_auc=0.565145 | stop_bal_acc@0.5=0.537085 | stop_acc@0.5=0.519575 | lr=4.500000e-04
+cv_fold1 | seed=1337 | epoch=003 | train_loss=0.635020 | stop_loss=0.775897 | stop_auc=0.583098 | stop_bal_acc@0.5=0.560678 | stop_acc@0.5=0.523210 | lr=4.500000e-04
+cv_fold1 | seed=1337 | epoch=004 | train_loss=0.566664 | stop_loss=0.914769 | stop_auc=0.569594 | stop_bal_acc@0.5=0.557142 | stop_acc@0.5=0.493289 | lr=4.500000e-04
+cv_fold1 | seed=1337 | epoch=005 | train_loss=0.510815 | stop_loss=1.042469 | stop_auc=0.502946 | stop_bal_acc@0.5=0.492814 | stop_acc@0.5=0.527125 | lr=4.500000e-04
+cv_fold1 | seed=1337 | epoch=006 | train_loss=0.440694 | stop_loss=1.289987 | stop_auc=0.483233 | stop_bal_acc@0.5=0.471334 | stop_acc@0.5=0.504195 | lr=2.250000e-04
+cv_fold1 | seed=1337 | epoch=007 | train_loss=0.387341 | stop_loss=1.242922 | stop_auc=0.507117 | stop_bal_acc@0.5=0.491077 | stop_acc@0.5=0.527685 | lr=2.250000e-04
+cv_fold1 | seed=1337 | epoch=008 | train_loss=0.354333 | stop_loss=1.387341 | stop_auc=0.477644 | stop_bal_acc@0.5=0.477911 | stop_acc@0.5=0.516219 | lr=2.250000e-04
+cv_fold1 | seed=1337 | epoch=009 | train_loss=0.325511 | stop_loss=1.483946 | stop_auc=0.466497 | stop_bal_acc@0.5=0.482748 | stop_acc@0.5=0.525168 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=1337 at epoch 9
+Fold 1 | seed=1337 | val_auc=0.525908 | val_bal_acc@0.5=0.514121
+
+--- Training cv_fold1 | seed=2026 ---
+Trainable params: 410,241
+cv_fold1 | seed=2026 | epoch=001 | train_loss=0.692884 | stop_loss=0.689587 | stop_auc=0.538042 | stop_bal_acc@0.5=0.530240 | stop_acc@0.5=0.530481 | lr=4.500000e-04
+cv_fold1 | seed=2026 | epoch=002 | train_loss=0.674894 | stop_loss=0.709101 | stop_auc=0.579306 | stop_bal_acc@0.5=0.564889 | stop_acc@0.5=0.525168 | lr=4.500000e-04
+cv_fold1 | seed=2026 | epoch=003 | train_loss=0.634056 | stop_loss=0.799320 | stop_auc=0.573805 | stop_bal_acc@0.5=0.560732 | stop_acc@0.5=0.503635 | lr=4.500000e-04
+cv_fold1 | seed=2026 | epoch=004 | train_loss=0.567994 | stop_loss=1.091727 | stop_auc=0.478548 | stop_bal_acc@0.5=0.511791 | stop_acc@0.5=0.470638 | lr=4.500000e-04
+cv_fold1 | seed=2026 | epoch=005 | train_loss=0.500334 | stop_loss=1.114423 | stop_auc=0.513282 | stop_bal_acc@0.5=0.526093 | stop_acc@0.5=0.496365 | lr=2.250000e-04
+cv_fold1 | seed=2026 | epoch=006 | train_loss=0.431343 | stop_loss=1.302210 | stop_auc=0.477999 | stop_bal_acc@0.5=0.485954 | stop_acc@0.5=0.483781 | lr=2.250000e-04
+cv_fold1 | seed=2026 | epoch=007 | train_loss=0.386439 | stop_loss=1.418978 | stop_auc=0.477756 | stop_bal_acc@0.5=0.487359 | stop_acc@0.5=0.475112 | lr=2.250000e-04
+cv_fold1 | seed=2026 | epoch=008 | train_loss=0.357171 | stop_loss=1.554763 | stop_auc=0.454236 | stop_bal_acc@0.5=0.463212 | stop_acc@0.5=0.471197 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=2026 at epoch 8
+Fold 1 | seed=2026 | val_auc=0.516645 | val_bal_acc@0.5=0.517519
+
+--- Training cv_fold1 | seed=777 ---
+Trainable params: 410,241
+cv_fold1 | seed=777 | epoch=001 | train_loss=0.693487 | stop_loss=0.680738 | stop_auc=0.523240 | stop_bal_acc@0.5=0.489880 | stop_acc@0.5=0.549217 | lr=4.500000e-04
+cv_fold1 | seed=777 | epoch=002 | train_loss=0.675343 | stop_loss=0.704601 | stop_auc=0.547179 | stop_bal_acc@0.5=0.512381 | stop_acc@0.5=0.511745 | lr=4.500000e-04
+cv_fold1 | seed=777 | epoch=003 | train_loss=0.636849 | stop_loss=0.744252 | stop_auc=0.531785 | stop_bal_acc@0.5=0.512341 | stop_acc@0.5=0.510626 | lr=4.500000e-04
+cv_fold1 | seed=777 | epoch=004 | train_loss=0.582333 | stop_loss=0.831479 | stop_auc=0.503572 | stop_bal_acc@0.5=0.517132 | stop_acc@0.5=0.503076 | lr=4.500000e-04
+cv_fold1 | seed=777 | epoch=005 | train_loss=0.515393 | stop_loss=1.099040 | stop_auc=0.437113 | stop_bal_acc@0.5=0.458130 | stop_acc@0.5=0.440157 | lr=2.250000e-04
+cv_fold1 | seed=777 | epoch=006 | train_loss=0.451241 | stop_loss=1.072807 | stop_auc=0.455791 | stop_bal_acc@0.5=0.450534 | stop_acc@0.5=0.468680 | lr=2.250000e-04
+cv_fold1 | seed=777 | epoch=007 | train_loss=0.419759 | stop_loss=1.150234 | stop_auc=0.481680 | stop_bal_acc@0.5=0.481656 | stop_acc@0.5=0.452461 | lr=2.250000e-04
+cv_fold1 | seed=777 | epoch=008 | train_loss=0.395274 | stop_loss=1.352642 | stop_auc=0.465125 | stop_bal_acc@0.5=0.480164 | stop_acc@0.5=0.463367 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=777 at epoch 8
+Fold 1 | seed=777 | val_auc=0.521274 | val_bal_acc@0.5=0.518810
+
+--- Training cv_fold1 | seed=31415 ---
+Trainable params: 410,241
+cv_fold1 | seed=31415 | epoch=001 | train_loss=0.691573 | stop_loss=0.687818 | stop_auc=0.505723 | stop_bal_acc@0.5=0.470287 | stop_acc@0.5=0.511186 | lr=4.500000e-04
+cv_fold1 | seed=31415 | epoch=002 | train_loss=0.669852 | stop_loss=0.673780 | stop_auc=0.557414 | stop_bal_acc@0.5=0.498553 | stop_acc@0.5=0.527405 | lr=4.500000e-04
+cv_fold1 | seed=31415 | epoch=003 | train_loss=0.622285 | stop_loss=0.773767 | stop_auc=0.511264 | stop_bal_acc@0.5=0.505310 | stop_acc@0.5=0.506991 | lr=4.500000e-04
+cv_fold1 | seed=31415 | epoch=004 | train_loss=0.565978 | stop_loss=0.806923 | stop_auc=0.532439 | stop_bal_acc@0.5=0.542871 | stop_acc@0.5=0.536353 | lr=4.500000e-04
+cv_fold1 | seed=31415 | epoch=005 | train_loss=0.518476 | stop_loss=0.917532 | stop_auc=0.488928 | stop_bal_acc@0.5=0.492571 | stop_acc@0.5=0.528523 | lr=2.250000e-04
+cv_fold1 | seed=31415 | epoch=006 | train_loss=0.465417 | stop_loss=1.027648 | stop_auc=0.479848 | stop_bal_acc@0.5=0.483312 | stop_acc@0.5=0.512864 | lr=2.250000e-04
+cv_fold1 | seed=31415 | epoch=007 | train_loss=0.437749 | stop_loss=1.028975 | stop_auc=0.484465 | stop_bal_acc@0.5=0.479734 | stop_acc@0.5=0.533277 | lr=2.250000e-04
+cv_fold1 | seed=31415 | epoch=008 | train_loss=0.408342 | stop_loss=1.125171 | stop_auc=0.512869 | stop_bal_acc@0.5=0.500006 | stop_acc@0.5=0.515380 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=31415 at epoch 8
+Fold 1 | seed=31415 | val_auc=0.534517 | val_bal_acc@0.5=0.522395
+
+--- Training cv_fold1 | seed=123 ---
+Trainable params: 410,241
+cv_fold1 | seed=123 | epoch=001 | train_loss=0.692853 | stop_loss=0.692626 | stop_auc=0.528093 | stop_bal_acc@0.5=0.510831 | stop_acc@0.5=0.538591 | lr=4.500000e-04
+cv_fold1 | seed=123 | epoch=002 | train_loss=0.680204 | stop_loss=0.695952 | stop_auc=0.563678 | stop_bal_acc@0.5=0.555537 | stop_acc@0.5=0.571309 | lr=4.500000e-04
+cv_fold1 | seed=123 | epoch=003 | train_loss=0.647237 | stop_loss=0.705523 | stop_auc=0.573906 | stop_bal_acc@0.5=0.580991 | stop_acc@0.5=0.612975 | lr=4.500000e-04
+cv_fold1 | seed=123 | epoch=004 | train_loss=0.598406 | stop_loss=0.805467 | stop_auc=0.498181 | stop_bal_acc@0.5=0.492054 | stop_acc@0.5=0.569072 | lr=4.500000e-04
+cv_fold1 | seed=123 | epoch=005 | train_loss=0.534404 | stop_loss=0.972549 | stop_auc=0.514088 | stop_bal_acc@0.5=0.517337 | stop_acc@0.5=0.524049 | lr=4.500000e-04
+cv_fold1 | seed=123 | epoch=006 | train_loss=0.462346 | stop_loss=1.194875 | stop_auc=0.499639 | stop_bal_acc@0.5=0.510264 | stop_acc@0.5=0.527405 | lr=2.250000e-04
+cv_fold1 | seed=123 | epoch=007 | train_loss=0.400293 | stop_loss=1.304179 | stop_auc=0.497358 | stop_bal_acc@0.5=0.506606 | stop_acc@0.5=0.513982 | lr=2.250000e-04
+cv_fold1 | seed=123 | epoch=008 | train_loss=0.364476 | stop_loss=1.366739 | stop_auc=0.521312 | stop_bal_acc@0.5=0.524943 | stop_acc@0.5=0.534396 | lr=2.250000e-04
+cv_fold1 | seed=123 | epoch=009 | train_loss=0.331305 | stop_loss=1.377694 | stop_auc=0.516293 | stop_bal_acc@0.5=0.510083 | stop_acc@0.5=0.548098 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=123 at epoch 9
+Fold 1 | seed=123 | val_auc=0.528657 | val_bal_acc@0.5=0.528793
+
+--- Training cv_fold1 | seed=999 ---
+Trainable params: 410,241
+cv_fold1 | seed=999 | epoch=001 | train_loss=0.691411 | stop_loss=0.682990 | stop_auc=0.538702 | stop_bal_acc@0.5=0.530883 | stop_acc@0.5=0.552013 | lr=4.500000e-04
+cv_fold1 | seed=999 | epoch=002 | train_loss=0.675101 | stop_loss=0.699008 | stop_auc=0.566998 | stop_bal_acc@0.5=0.551616 | stop_acc@0.5=0.521253 | lr=4.500000e-04
+cv_fold1 | seed=999 | epoch=003 | train_loss=0.636498 | stop_loss=0.763644 | stop_auc=0.539549 | stop_bal_acc@0.5=0.569648 | stop_acc@0.5=0.523770 | lr=4.500000e-04
+cv_fold1 | seed=999 | epoch=004 | train_loss=0.564510 | stop_loss=0.871528 | stop_auc=0.490063 | stop_bal_acc@0.5=0.518456 | stop_acc@0.5=0.480425 | lr=4.500000e-04
+cv_fold1 | seed=999 | epoch=005 | train_loss=0.495914 | stop_loss=1.100450 | stop_auc=0.457337 | stop_bal_acc@0.5=0.460611 | stop_acc@0.5=0.469799 | lr=2.250000e-04
+cv_fold1 | seed=999 | epoch=006 | train_loss=0.447924 | stop_loss=1.166436 | stop_auc=0.458112 | stop_bal_acc@0.5=0.467150 | stop_acc@0.5=0.460850 | lr=2.250000e-04
+cv_fold1 | seed=999 | epoch=007 | train_loss=0.410515 | stop_loss=1.244269 | stop_auc=0.440919 | stop_bal_acc@0.5=0.454420 | stop_acc@0.5=0.489653 | lr=2.250000e-04
+cv_fold1 | seed=999 | epoch=008 | train_loss=0.385316 | stop_loss=1.310778 | stop_auc=0.456060 | stop_bal_acc@0.5=0.471018 | stop_acc@0.5=0.498881 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=999 at epoch 8
+Fold 1 | seed=999 | val_auc=0.518150 | val_bal_acc@0.5=0.515803
+
+--- Training cv_fold1 | seed=5555 ---
+Trainable params: 410,241
+cv_fold1 | seed=5555 | epoch=001 | train_loss=0.690042 | stop_loss=0.696657 | stop_auc=0.521938 | stop_bal_acc@0.5=0.512523 | stop_acc@0.5=0.533277 | lr=4.500000e-04
+cv_fold1 | seed=5555 | epoch=002 | train_loss=0.667260 | stop_loss=0.699424 | stop_auc=0.543536 | stop_bal_acc@0.5=0.513903 | stop_acc@0.5=0.546141 | lr=4.500000e-04
+cv_fold1 | seed=5555 | epoch=003 | train_loss=0.627486 | stop_loss=0.800901 | stop_auc=0.590143 | stop_bal_acc@0.5=0.545496 | stop_acc@0.5=0.504474 | lr=4.500000e-04
+cv_fold1 | seed=5555 | epoch=004 | train_loss=0.571678 | stop_loss=0.898558 | stop_auc=0.550430 | stop_bal_acc@0.5=0.544313 | stop_acc@0.5=0.536913 | lr=4.500000e-04
+cv_fold1 | seed=5555 | epoch=005 | train_loss=0.495557 | stop_loss=0.990373 | stop_auc=0.508357 | stop_bal_acc@0.5=0.478110 | stop_acc@0.5=0.478468 | lr=4.500000e-04
+cv_fold1 | seed=5555 | epoch=006 | train_loss=0.442353 | stop_loss=1.141762 | stop_auc=0.513372 | stop_bal_acc@0.5=0.497567 | stop_acc@0.5=0.510347 | lr=2.250000e-04
+cv_fold1 | seed=5555 | epoch=007 | train_loss=0.379540 | stop_loss=1.228023 | stop_auc=0.502453 | stop_bal_acc@0.5=0.497214 | stop_acc@0.5=0.515660 | lr=2.250000e-04
+cv_fold1 | seed=5555 | epoch=008 | train_loss=0.345688 | stop_loss=1.340641 | stop_auc=0.522321 | stop_bal_acc@0.5=0.524233 | stop_acc@0.5=0.533277 | lr=2.250000e-04
+cv_fold1 | seed=5555 | epoch=009 | train_loss=0.327288 | stop_loss=1.337319 | stop_auc=0.530632 | stop_bal_acc@0.5=0.532388 | stop_acc@0.5=0.540268 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=5555 at epoch 9
+Fold 1 | seed=5555 | val_auc=0.512473 | val_bal_acc@0.5=0.504158
+
+--- Training cv_fold1 | seed=8080 ---
+Trainable params: 410,241
+cv_fold1 | seed=8080 | epoch=001 | train_loss=0.692935 | stop_loss=0.694981 | stop_auc=0.516618 | stop_bal_acc@0.5=0.495554 | stop_acc@0.5=0.494966 | lr=4.500000e-04
+cv_fold1 | seed=8080 | epoch=002 | train_loss=0.673427 | stop_loss=0.696506 | stop_auc=0.544989 | stop_bal_acc@0.5=0.519178 | stop_acc@0.5=0.524049 | lr=4.500000e-04
+cv_fold1 | seed=8080 | epoch=003 | train_loss=0.636989 | stop_loss=0.722026 | stop_auc=0.576666 | stop_bal_acc@0.5=0.560487 | stop_acc@0.5=0.556488 | lr=4.500000e-04
+cv_fold1 | seed=8080 | epoch=004 | train_loss=0.584941 | stop_loss=0.769392 | stop_auc=0.578583 | stop_bal_acc@0.5=0.565051 | stop_acc@0.5=0.521532 | lr=4.500000e-04
+cv_fold1 | seed=8080 | epoch=005 | train_loss=0.527839 | stop_loss=0.873890 | stop_auc=0.529443 | stop_bal_acc@0.5=0.539322 | stop_acc@0.5=0.570470 | lr=4.500000e-04
+cv_fold1 | seed=8080 | epoch=006 | train_loss=0.457456 | stop_loss=0.932410 | stop_auc=0.565230 | stop_bal_acc@0.5=0.555520 | stop_acc@0.5=0.556767 | lr=4.500000e-04
+cv_fold1 | seed=8080 | epoch=007 | train_loss=0.406109 | stop_loss=1.159871 | stop_auc=0.540492 | stop_bal_acc@0.5=0.528074 | stop_acc@0.5=0.537752 | lr=2.250000e-04
+cv_fold1 | seed=8080 | epoch=008 | train_loss=0.349290 | stop_loss=1.202112 | stop_auc=0.546613 | stop_bal_acc@0.5=0.544718 | stop_acc@0.5=0.563479 | lr=2.250000e-04
+cv_fold1 | seed=8080 | epoch=009 | train_loss=0.321930 | stop_loss=1.351074 | stop_auc=0.516793 | stop_bal_acc@0.5=0.514575 | stop_acc@0.5=0.538031 | lr=2.250000e-04
+cv_fold1 | seed=8080 | epoch=010 | train_loss=0.302438 | stop_loss=1.354861 | stop_auc=0.528303 | stop_bal_acc@0.5=0.527828 | stop_acc@0.5=0.547260 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=8080 at epoch 10
+Fold 1 | seed=8080 | val_auc=0.524068 | val_bal_acc@0.5=0.497021
+
+--- Training cv_fold1 | seed=2718 ---
+Trainable params: 410,241
+cv_fold1 | seed=2718 | epoch=001 | train_loss=0.692959 | stop_loss=0.687244 | stop_auc=0.503566 | stop_bal_acc@0.5=0.504356 | stop_acc@0.5=0.558725 | lr=4.500000e-04
+cv_fold1 | seed=2718 | epoch=002 | train_loss=0.677971 | stop_loss=0.693673 | stop_auc=0.563925 | stop_bal_acc@0.5=0.519523 | stop_acc@0.5=0.511465 | lr=4.500000e-04
+cv_fold1 | seed=2718 | epoch=003 | train_loss=0.641392 | stop_loss=0.856386 | stop_auc=0.531046 | stop_bal_acc@0.5=0.541536 | stop_acc@0.5=0.496644 | lr=4.500000e-04
+cv_fold1 | seed=2718 | epoch=004 | train_loss=0.586477 | stop_loss=0.802470 | stop_auc=0.543197 | stop_bal_acc@0.5=0.543898 | stop_acc@0.5=0.566275 | lr=4.500000e-04
+cv_fold1 | seed=2718 | epoch=005 | train_loss=0.515462 | stop_loss=0.925749 | stop_auc=0.513817 | stop_bal_acc@0.5=0.512939 | stop_acc@0.5=0.515660 | lr=2.250000e-04
+cv_fold1 | seed=2718 | epoch=006 | train_loss=0.446410 | stop_loss=1.135870 | stop_auc=0.471426 | stop_bal_acc@0.5=0.457120 | stop_acc@0.5=0.487975 | lr=2.250000e-04
+cv_fold1 | seed=2718 | epoch=007 | train_loss=0.419017 | stop_loss=1.244496 | stop_auc=0.472555 | stop_bal_acc@0.5=0.463945 | stop_acc@0.5=0.470638 | lr=2.250000e-04
+cv_fold1 | seed=2718 | epoch=008 | train_loss=0.392574 | stop_loss=1.255562 | stop_auc=0.477110 | stop_bal_acc@0.5=0.472832 | stop_acc@0.5=0.477069 | lr=1.125000e-04
+Early stopping for cv_fold1 | seed=2718 at epoch 8
+Fold 1 | seed=2718 | val_auc=0.519653 | val_bal_acc@0.5=0.524914
+
+Fold 2: train=40556, stop=7156, val=23866
+
+--- Training cv_fold2 | seed=42 ---
+Trainable params: 410,241
+cv_fold2 | seed=42 | epoch=001 | train_loss=0.689369 | stop_loss=0.692890 | stop_auc=0.526379 | stop_bal_acc@0.5=0.546746 | stop_acc@0.5=0.575321 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=002 | train_loss=0.668431 | stop_loss=0.701892 | stop_auc=0.517019 | stop_bal_acc@0.5=0.517129 | stop_acc@0.5=0.551705 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=003 | train_loss=0.630342 | stop_loss=0.827321 | stop_auc=0.483520 | stop_bal_acc@0.5=0.487353 | stop_acc@0.5=0.504891 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=004 | train_loss=0.565118 | stop_loss=0.983746 | stop_auc=0.527749 | stop_bal_acc@0.5=0.530448 | stop_acc@0.5=0.534936 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=005 | train_loss=0.499011 | stop_loss=1.114306 | stop_auc=0.558458 | stop_bal_acc@0.5=0.547554 | stop_acc@0.5=0.544438 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=006 | train_loss=0.442095 | stop_loss=1.175369 | stop_auc=0.547143 | stop_bal_acc@0.5=0.537556 | stop_acc@0.5=0.541923 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=007 | train_loss=0.391944 | stop_loss=1.231420 | stop_auc=0.582615 | stop_bal_acc@0.5=0.548772 | stop_acc@0.5=0.561906 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=008 | train_loss=0.349415 | stop_loss=1.411302 | stop_auc=0.587036 | stop_bal_acc@0.5=0.569366 | stop_acc@0.5=0.564421 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=009 | train_loss=0.314991 | stop_loss=1.459469 | stop_auc=0.580995 | stop_bal_acc@0.5=0.553421 | stop_acc@0.5=0.558133 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=010 | train_loss=0.291249 | stop_loss=1.564924 | stop_auc=0.564655 | stop_bal_acc@0.5=0.536186 | stop_acc@0.5=0.537451 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=011 | train_loss=0.268617 | stop_loss=1.519239 | stop_auc=0.587624 | stop_bal_acc@0.5=0.562736 | stop_acc@0.5=0.580352 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=012 | train_loss=0.249769 | stop_loss=1.647495 | stop_auc=0.576548 | stop_bal_acc@0.5=0.538086 | stop_acc@0.5=0.539268 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=013 | train_loss=0.231493 | stop_loss=1.662114 | stop_auc=0.593599 | stop_bal_acc@0.5=0.564460 | stop_acc@0.5=0.563304 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=014 | train_loss=0.219588 | stop_loss=1.630612 | stop_auc=0.592028 | stop_bal_acc@0.5=0.551234 | stop_acc@0.5=0.551984 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=015 | train_loss=0.206224 | stop_loss=1.594591 | stop_auc=0.602471 | stop_bal_acc@0.5=0.580973 | stop_acc@0.5=0.585103 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=016 | train_loss=0.195753 | stop_loss=1.652656 | stop_auc=0.599243 | stop_bal_acc@0.5=0.576185 | stop_acc@0.5=0.575182 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=017 | train_loss=0.186098 | stop_loss=1.749399 | stop_auc=0.571682 | stop_bal_acc@0.5=0.550646 | stop_acc@0.5=0.552963 | lr=4.500000e-04
+cv_fold2 | seed=42 | epoch=018 | train_loss=0.182791 | stop_loss=1.808444 | stop_auc=0.572750 | stop_bal_acc@0.5=0.548627 | stop_acc@0.5=0.551006 | lr=2.250000e-04
+cv_fold2 | seed=42 | epoch=019 | train_loss=0.156464 | stop_loss=1.804038 | stop_auc=0.587809 | stop_bal_acc@0.5=0.561194 | stop_acc@0.5=0.557854 | lr=2.250000e-04
+cv_fold2 | seed=42 | epoch=020 | train_loss=0.149054 | stop_loss=1.883090 | stop_auc=0.582436 | stop_bal_acc@0.5=0.565256 | stop_acc@0.5=0.563583 | lr=2.250000e-04
+cv_fold2 | seed=42 | epoch=021 | train_loss=0.149532 | stop_loss=1.806656 | stop_auc=0.591643 | stop_bal_acc@0.5=0.566911 | stop_acc@0.5=0.563443 | lr=1.125000e-04
+Early stopping for cv_fold2 | seed=42 at epoch 21
+Fold 2 | seed=42 | val_auc=0.536347 | val_bal_acc@0.5=0.519678
+
+--- Training cv_fold2 | seed=1337 ---
+Trainable params: 410,241
+cv_fold2 | seed=1337 | epoch=001 | train_loss=0.690706 | stop_loss=0.706218 | stop_auc=0.490756 | stop_bal_acc@0.5=0.495385 | stop_acc@0.5=0.501817 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=002 | train_loss=0.677390 | stop_loss=0.725146 | stop_auc=0.469916 | stop_bal_acc@0.5=0.473340 | stop_acc@0.5=0.521381 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=003 | train_loss=0.633932 | stop_loss=0.800966 | stop_auc=0.521270 | stop_bal_acc@0.5=0.517518 | stop_acc@0.5=0.525992 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=004 | train_loss=0.571044 | stop_loss=0.939614 | stop_auc=0.507885 | stop_bal_acc@0.5=0.512814 | stop_acc@0.5=0.524455 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=005 | train_loss=0.506999 | stop_loss=1.068208 | stop_auc=0.519244 | stop_bal_acc@0.5=0.519741 | stop_acc@0.5=0.528368 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=006 | train_loss=0.447126 | stop_loss=1.196232 | stop_auc=0.534846 | stop_bal_acc@0.5=0.517363 | stop_acc@0.5=0.521101 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=007 | train_loss=0.397418 | stop_loss=1.448073 | stop_auc=0.537497 | stop_bal_acc@0.5=0.533785 | stop_acc@0.5=0.536892 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=008 | train_loss=0.348898 | stop_loss=1.525371 | stop_auc=0.547351 | stop_bal_acc@0.5=0.538854 | stop_acc@0.5=0.536892 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=009 | train_loss=0.320759 | stop_loss=1.425762 | stop_auc=0.562088 | stop_bal_acc@0.5=0.544724 | stop_acc@0.5=0.551006 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=010 | train_loss=0.291019 | stop_loss=1.504501 | stop_auc=0.565739 | stop_bal_acc@0.5=0.546673 | stop_acc@0.5=0.552404 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=011 | train_loss=0.263484 | stop_loss=1.575325 | stop_auc=0.585025 | stop_bal_acc@0.5=0.563813 | stop_acc@0.5=0.566238 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=012 | train_loss=0.247214 | stop_loss=1.580705 | stop_auc=0.578773 | stop_bal_acc@0.5=0.556805 | stop_acc@0.5=0.563304 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=013 | train_loss=0.232984 | stop_loss=1.711860 | stop_auc=0.576409 | stop_bal_acc@0.5=0.541949 | stop_acc@0.5=0.550307 | lr=4.500000e-04
+cv_fold2 | seed=1337 | epoch=014 | train_loss=0.221494 | stop_loss=1.722929 | stop_auc=0.562933 | stop_bal_acc@0.5=0.545123 | stop_acc@0.5=0.540805 | lr=2.250000e-04
+cv_fold2 | seed=1337 | epoch=015 | train_loss=0.193680 | stop_loss=1.855512 | stop_auc=0.566180 | stop_bal_acc@0.5=0.545390 | stop_acc@0.5=0.548631 | lr=2.250000e-04
+cv_fold2 | seed=1337 | epoch=016 | train_loss=0.185840 | stop_loss=1.724012 | stop_auc=0.589505 | stop_bal_acc@0.5=0.560236 | stop_acc@0.5=0.559111 | lr=2.250000e-04
+cv_fold2 | seed=1337 | epoch=017 | train_loss=0.179366 | stop_loss=1.789458 | stop_auc=0.585205 | stop_bal_acc@0.5=0.553744 | stop_acc@0.5=0.554220 | lr=2.250000e-04
+cv_fold2 | seed=1337 | epoch=018 | train_loss=0.174151 | stop_loss=1.794795 | stop_auc=0.577799 | stop_bal_acc@0.5=0.551024 | stop_acc@0.5=0.554360 | lr=2.250000e-04
+cv_fold2 | seed=1337 | epoch=019 | train_loss=0.166801 | stop_loss=1.814055 | stop_auc=0.576231 | stop_bal_acc@0.5=0.553151 | stop_acc@0.5=0.553941 | lr=1.125000e-04
+cv_fold2 | seed=1337 | epoch=020 | train_loss=0.155719 | stop_loss=1.841667 | stop_auc=0.576227 | stop_bal_acc@0.5=0.548943 | stop_acc@0.5=0.549469 | lr=1.125000e-04
+cv_fold2 | seed=1337 | epoch=021 | train_loss=0.156369 | stop_loss=1.788088 | stop_auc=0.586399 | stop_bal_acc@0.5=0.558410 | stop_acc@0.5=0.563164 | lr=1.125000e-04
+cv_fold2 | seed=1337 | epoch=022 | train_loss=0.152600 | stop_loss=1.787256 | stop_auc=0.592228 | stop_bal_acc@0.5=0.559455 | stop_acc@0.5=0.558133 | lr=1.125000e-04
+cv_fold2 | seed=1337 | epoch=023 | train_loss=0.150602 | stop_loss=1.809509 | stop_auc=0.596236 | stop_bal_acc@0.5=0.563813 | stop_acc@0.5=0.557714 | lr=1.125000e-04
+cv_fold2 | seed=1337 | epoch=024 | train_loss=0.148565 | stop_loss=1.803892 | stop_auc=0.585546 | stop_bal_acc@0.5=0.550150 | stop_acc@0.5=0.559950 | lr=1.125000e-04
+cv_fold2 | seed=1337 | epoch=025 | train_loss=0.148980 | stop_loss=1.786447 | stop_auc=0.593487 | stop_bal_acc@0.5=0.564030 | stop_acc@0.5=0.565539 | lr=1.125000e-04
+cv_fold2 | seed=1337 | epoch=026 | train_loss=0.144823 | stop_loss=1.749196 | stop_auc=0.592370 | stop_bal_acc@0.5=0.560842 | stop_acc@0.5=0.567216 | lr=5.625000e-05
+cv_fold2 | seed=1337 | epoch=027 | train_loss=0.138490 | stop_loss=1.863440 | stop_auc=0.581596 | stop_bal_acc@0.5=0.557753 | stop_acc@0.5=0.559530 | lr=5.625000e-05
+cv_fold2 | seed=1337 | epoch=028 | train_loss=0.137418 | stop_loss=1.820811 | stop_auc=0.594210 | stop_bal_acc@0.5=0.561639 | stop_acc@0.5=0.563443 | lr=5.625000e-05
+cv_fold2 | seed=1337 | epoch=029 | train_loss=0.136078 | stop_loss=1.816443 | stop_auc=0.596404 | stop_bal_acc@0.5=0.569780 | stop_acc@0.5=0.570989 | lr=5.625000e-05
+cv_fold2 | seed=1337 | epoch=030 | train_loss=0.133070 | stop_loss=1.844404 | stop_auc=0.589634 | stop_bal_acc@0.5=0.558603 | stop_acc@0.5=0.560648 | lr=5.625000e-05
+cv_fold2 | seed=1337 | epoch=031 | train_loss=0.134479 | stop_loss=1.863865 | stop_auc=0.590352 | stop_bal_acc@0.5=0.561190 | stop_acc@0.5=0.561068 | lr=5.625000e-05
+cv_fold2 | seed=1337 | epoch=032 | train_loss=0.131596 | stop_loss=1.856815 | stop_auc=0.591249 | stop_bal_acc@0.5=0.560864 | stop_acc@0.5=0.564142 | lr=2.812500e-05
+Fold 2 | seed=1337 | val_auc=0.551797 | val_bal_acc@0.5=0.544266
+
+--- Training cv_fold2 | seed=2026 ---
+Trainable params: 410,241
+cv_fold2 | seed=2026 | epoch=001 | train_loss=0.691057 | stop_loss=0.699398 | stop_auc=0.518602 | stop_bal_acc@0.5=0.521421 | stop_acc@0.5=0.543041 | lr=4.500000e-04
+cv_fold2 | seed=2026 | epoch=002 | train_loss=0.674234 | stop_loss=0.786533 | stop_auc=0.419962 | stop_bal_acc@0.5=0.462092 | stop_acc@0.5=0.488960 | lr=4.500000e-04
+cv_fold2 | seed=2026 | epoch=003 | train_loss=0.628057 | stop_loss=0.933438 | stop_auc=0.448535 | stop_bal_acc@0.5=0.484762 | stop_acc@0.5=0.490637 | lr=4.500000e-04
+cv_fold2 | seed=2026 | epoch=004 | train_loss=0.570552 | stop_loss=0.907505 | stop_auc=0.501344 | stop_bal_acc@0.5=0.518145 | stop_acc@0.5=0.535075 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=005 | train_loss=0.502804 | stop_loss=1.099441 | stop_auc=0.506468 | stop_bal_acc@0.5=0.517044 | stop_acc@0.5=0.525852 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=006 | train_loss=0.460830 | stop_loss=1.188041 | stop_auc=0.512588 | stop_bal_acc@0.5=0.517592 | stop_acc@0.5=0.523337 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=007 | train_loss=0.429097 | stop_loss=1.247951 | stop_auc=0.537491 | stop_bal_acc@0.5=0.533599 | stop_acc@0.5=0.524036 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=008 | train_loss=0.395225 | stop_loss=1.322901 | stop_auc=0.531642 | stop_bal_acc@0.5=0.526509 | stop_acc@0.5=0.534656 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=009 | train_loss=0.371841 | stop_loss=1.310753 | stop_auc=0.533353 | stop_bal_acc@0.5=0.529292 | stop_acc@0.5=0.541923 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=010 | train_loss=0.351957 | stop_loss=1.342020 | stop_auc=0.546412 | stop_bal_acc@0.5=0.536576 | stop_acc@0.5=0.537731 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=011 | train_loss=0.325061 | stop_loss=1.541812 | stop_auc=0.532043 | stop_bal_acc@0.5=0.526641 | stop_acc@0.5=0.529625 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=012 | train_loss=0.310092 | stop_loss=1.588750 | stop_auc=0.531538 | stop_bal_acc@0.5=0.526555 | stop_acc@0.5=0.524874 | lr=2.250000e-04
+cv_fold2 | seed=2026 | epoch=013 | train_loss=0.291276 | stop_loss=1.486716 | stop_auc=0.536898 | stop_bal_acc@0.5=0.532036 | stop_acc@0.5=0.543600 | lr=1.125000e-04
+cv_fold2 | seed=2026 | epoch=014 | train_loss=0.269193 | stop_loss=1.615500 | stop_auc=0.548849 | stop_bal_acc@0.5=0.541580 | stop_acc@0.5=0.542482 | lr=1.125000e-04
+cv_fold2 | seed=2026 | epoch=015 | train_loss=0.260624 | stop_loss=1.685721 | stop_auc=0.537691 | stop_bal_acc@0.5=0.537139 | stop_acc@0.5=0.538988 | lr=1.125000e-04
+cv_fold2 | seed=2026 | epoch=016 | train_loss=0.252669 | stop_loss=1.638305 | stop_auc=0.553959 | stop_bal_acc@0.5=0.552389 | stop_acc@0.5=0.553522 | lr=1.125000e-04
+cv_fold2 | seed=2026 | epoch=017 | train_loss=0.244080 | stop_loss=1.689981 | stop_auc=0.551422 | stop_bal_acc@0.5=0.552906 | stop_acc@0.5=0.556037 | lr=1.125000e-04
+cv_fold2 | seed=2026 | epoch=018 | train_loss=0.238672 | stop_loss=1.755471 | stop_auc=0.538106 | stop_bal_acc@0.5=0.537720 | stop_acc@0.5=0.536333 | lr=1.125000e-04
+cv_fold2 | seed=2026 | epoch=019 | train_loss=0.232661 | stop_loss=1.747795 | stop_auc=0.553133 | stop_bal_acc@0.5=0.542294 | stop_acc@0.5=0.539268 | lr=5.625000e-05
+cv_fold2 | seed=2026 | epoch=020 | train_loss=0.221590 | stop_loss=1.768965 | stop_auc=0.553883 | stop_bal_acc@0.5=0.543448 | stop_acc@0.5=0.540386 | lr=5.625000e-05
+cv_fold2 | seed=2026 | epoch=021 | train_loss=0.220385 | stop_loss=1.766975 | stop_auc=0.556466 | stop_bal_acc@0.5=0.549020 | stop_acc@0.5=0.547652 | lr=5.625000e-05
+cv_fold2 | seed=2026 | epoch=022 | train_loss=0.216582 | stop_loss=1.758384 | stop_auc=0.550563 | stop_bal_acc@0.5=0.548806 | stop_acc@0.5=0.549189 | lr=5.625000e-05
+cv_fold2 | seed=2026 | epoch=023 | train_loss=0.215676 | stop_loss=1.778719 | stop_auc=0.551157 | stop_bal_acc@0.5=0.549962 | stop_acc@0.5=0.546674 | lr=5.625000e-05
+cv_fold2 | seed=2026 | epoch=024 | train_loss=0.210501 | stop_loss=1.798946 | stop_auc=0.555683 | stop_bal_acc@0.5=0.548256 | stop_acc@0.5=0.546814 | lr=2.812500e-05
+cv_fold2 | seed=2026 | epoch=025 | train_loss=0.206753 | stop_loss=1.784691 | stop_auc=0.554711 | stop_bal_acc@0.5=0.552589 | stop_acc@0.5=0.552683 | lr=2.812500e-05
+cv_fold2 | seed=2026 | epoch=026 | train_loss=0.203127 | stop_loss=1.791047 | stop_auc=0.557440 | stop_bal_acc@0.5=0.552438 | stop_acc@0.5=0.553102 | lr=2.812500e-05
+cv_fold2 | seed=2026 | epoch=027 | train_loss=0.204348 | stop_loss=1.787023 | stop_auc=0.556466 | stop_bal_acc@0.5=0.546989 | stop_acc@0.5=0.546814 | lr=2.812500e-05
+cv_fold2 | seed=2026 | epoch=028 | train_loss=0.199924 | stop_loss=1.829915 | stop_auc=0.551798 | stop_bal_acc@0.5=0.549754 | stop_acc@0.5=0.549469 | lr=2.812500e-05
+cv_fold2 | seed=2026 | epoch=029 | train_loss=0.195759 | stop_loss=1.829028 | stop_auc=0.558109 | stop_bal_acc@0.5=0.549170 | stop_acc@0.5=0.547233 | lr=2.812500e-05
+cv_fold2 | seed=2026 | epoch=030 | train_loss=0.194544 | stop_loss=1.883767 | stop_auc=0.552368 | stop_bal_acc@0.5=0.544839 | stop_acc@0.5=0.541783 | lr=2.812500e-05
+cv_fold2 | seed=2026 | epoch=031 | train_loss=0.200265 | stop_loss=1.839601 | stop_auc=0.554796 | stop_bal_acc@0.5=0.544792 | stop_acc@0.5=0.542622 | lr=2.812500e-05
+cv_fold2 | seed=2026 | epoch=032 | train_loss=0.195479 | stop_loss=1.850087 | stop_auc=0.555261 | stop_bal_acc@0.5=0.546678 | stop_acc@0.5=0.545137 | lr=1.406250e-05
+Fold 2 | seed=2026 | val_auc=0.564837 | val_bal_acc@0.5=0.554978
+
+--- Training cv_fold2 | seed=777 ---
+Trainable params: 410,241
+cv_fold2 | seed=777 | epoch=001 | train_loss=0.690221 | stop_loss=0.697880 | stop_auc=0.500736 | stop_bal_acc@0.5=0.502199 | stop_acc@0.5=0.511319 | lr=4.500000e-04
+cv_fold2 | seed=777 | epoch=002 | train_loss=0.666455 | stop_loss=0.712212 | stop_auc=0.527540 | stop_bal_acc@0.5=0.504721 | stop_acc@0.5=0.494969 | lr=4.500000e-04
+cv_fold2 | seed=777 | epoch=003 | train_loss=0.624821 | stop_loss=0.839225 | stop_auc=0.471266 | stop_bal_acc@0.5=0.490329 | stop_acc@0.5=0.488122 | lr=4.500000e-04
+cv_fold2 | seed=777 | epoch=004 | train_loss=0.559032 | stop_loss=1.008052 | stop_auc=0.480078 | stop_bal_acc@0.5=0.490536 | stop_acc@0.5=0.484908 | lr=4.500000e-04
+cv_fold2 | seed=777 | epoch=005 | train_loss=0.490259 | stop_loss=1.138229 | stop_auc=0.522148 | stop_bal_acc@0.5=0.513478 | stop_acc@0.5=0.500140 | lr=2.250000e-04
+cv_fold2 | seed=777 | epoch=006 | train_loss=0.419826 | stop_loss=1.364314 | stop_auc=0.502770 | stop_bal_acc@0.5=0.493589 | stop_acc@0.5=0.474846 | lr=2.250000e-04
+cv_fold2 | seed=777 | epoch=007 | train_loss=0.377209 | stop_loss=1.391500 | stop_auc=0.522328 | stop_bal_acc@0.5=0.508670 | stop_acc@0.5=0.502236 | lr=2.250000e-04
+cv_fold2 | seed=777 | epoch=008 | train_loss=0.352541 | stop_loss=1.427132 | stop_auc=0.518037 | stop_bal_acc@0.5=0.500095 | stop_acc@0.5=0.500559 | lr=1.125000e-04
+Early stopping for cv_fold2 | seed=777 at epoch 8
+Fold 2 | seed=777 | val_auc=0.497345 | val_bal_acc@0.5=0.509363
+
+--- Training cv_fold2 | seed=31415 ---
+Trainable params: 410,241
+cv_fold2 | seed=31415 | epoch=001 | train_loss=0.691395 | stop_loss=0.682763 | stop_auc=0.509278 | stop_bal_acc@0.5=0.527307 | stop_acc@0.5=0.599916 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=002 | train_loss=0.675877 | stop_loss=0.704820 | stop_auc=0.499128 | stop_bal_acc@0.5=0.506795 | stop_acc@0.5=0.558273 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=003 | train_loss=0.638540 | stop_loss=0.801964 | stop_auc=0.513424 | stop_bal_acc@0.5=0.520388 | stop_acc@0.5=0.520961 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=004 | train_loss=0.583463 | stop_loss=0.833545 | stop_auc=0.537302 | stop_bal_acc@0.5=0.535140 | stop_acc@0.5=0.550587 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=005 | train_loss=0.521271 | stop_loss=0.917214 | stop_auc=0.560282 | stop_bal_acc@0.5=0.554835 | stop_acc@0.5=0.552404 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=006 | train_loss=0.455632 | stop_loss=1.037681 | stop_auc=0.575388 | stop_bal_acc@0.5=0.557979 | stop_acc@0.5=0.565400 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=007 | train_loss=0.406452 | stop_loss=1.170555 | stop_auc=0.580599 | stop_bal_acc@0.5=0.562289 | stop_acc@0.5=0.561347 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=008 | train_loss=0.357789 | stop_loss=1.268985 | stop_auc=0.581176 | stop_bal_acc@0.5=0.558939 | stop_acc@0.5=0.547513 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=009 | train_loss=0.323761 | stop_loss=1.330417 | stop_auc=0.591816 | stop_bal_acc@0.5=0.582981 | stop_acc@0.5=0.580073 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=010 | train_loss=0.294125 | stop_loss=1.441550 | stop_auc=0.589111 | stop_bal_acc@0.5=0.588498 | stop_acc@0.5=0.573505 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=011 | train_loss=0.274083 | stop_loss=1.478811 | stop_auc=0.582389 | stop_bal_acc@0.5=0.576266 | stop_acc@0.5=0.578675 | lr=4.500000e-04
+cv_fold2 | seed=31415 | epoch=012 | train_loss=0.254109 | stop_loss=1.630239 | stop_auc=0.576366 | stop_bal_acc@0.5=0.563145 | stop_acc@0.5=0.551146 | lr=2.250000e-04
+cv_fold2 | seed=31415 | epoch=013 | train_loss=0.217432 | stop_loss=1.692209 | stop_auc=0.575944 | stop_bal_acc@0.5=0.576209 | stop_acc@0.5=0.568474 | lr=2.250000e-04
+cv_fold2 | seed=31415 | epoch=014 | train_loss=0.208062 | stop_loss=1.728347 | stop_auc=0.583296 | stop_bal_acc@0.5=0.579479 | stop_acc@0.5=0.566238 | lr=2.250000e-04
+cv_fold2 | seed=31415 | epoch=015 | train_loss=0.202913 | stop_loss=1.745673 | stop_auc=0.580828 | stop_bal_acc@0.5=0.580596 | stop_acc@0.5=0.566657 | lr=1.125000e-04
+Early stopping for cv_fold2 | seed=31415 at epoch 15
+Fold 2 | seed=31415 | val_auc=0.517585 | val_bal_acc@0.5=0.511936
+
+--- Training cv_fold2 | seed=123 ---
+Trainable params: 410,241
+cv_fold2 | seed=123 | epoch=001 | train_loss=0.688692 | stop_loss=0.713589 | stop_auc=0.471236 | stop_bal_acc@0.5=0.462540 | stop_acc@0.5=0.473868 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=002 | train_loss=0.667165 | stop_loss=0.778969 | stop_auc=0.455894 | stop_bal_acc@0.5=0.485380 | stop_acc@0.5=0.510201 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=003 | train_loss=0.630372 | stop_loss=0.846530 | stop_auc=0.502264 | stop_bal_acc@0.5=0.512331 | stop_acc@0.5=0.517747 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=004 | train_loss=0.571744 | stop_loss=1.043759 | stop_auc=0.508898 | stop_bal_acc@0.5=0.517887 | stop_acc@0.5=0.516769 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=005 | train_loss=0.512225 | stop_loss=1.084267 | stop_auc=0.555047 | stop_bal_acc@0.5=0.535048 | stop_acc@0.5=0.523058 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=006 | train_loss=0.448545 | stop_loss=1.159182 | stop_auc=0.571920 | stop_bal_acc@0.5=0.553390 | stop_acc@0.5=0.550168 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=007 | train_loss=0.395940 | stop_loss=1.262982 | stop_auc=0.571946 | stop_bal_acc@0.5=0.551790 | stop_acc@0.5=0.543041 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=008 | train_loss=0.348693 | stop_loss=1.294834 | stop_auc=0.576663 | stop_bal_acc@0.5=0.558641 | stop_acc@0.5=0.561766 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=009 | train_loss=0.320037 | stop_loss=1.247858 | stop_auc=0.591555 | stop_bal_acc@0.5=0.579423 | stop_acc@0.5=0.590553 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=010 | train_loss=0.298203 | stop_loss=1.531757 | stop_auc=0.586637 | stop_bal_acc@0.5=0.553933 | stop_acc@0.5=0.546395 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=011 | train_loss=0.274497 | stop_loss=1.438721 | stop_auc=0.588848 | stop_bal_acc@0.5=0.567116 | stop_acc@0.5=0.572387 | lr=4.500000e-04
+cv_fold2 | seed=123 | epoch=012 | train_loss=0.252539 | stop_loss=1.664037 | stop_auc=0.586362 | stop_bal_acc@0.5=0.568722 | stop_acc@0.5=0.559670 | lr=2.250000e-04
+cv_fold2 | seed=123 | epoch=013 | train_loss=0.217981 | stop_loss=1.655935 | stop_auc=0.588881 | stop_bal_acc@0.5=0.577760 | stop_acc@0.5=0.576020 | lr=2.250000e-04
+cv_fold2 | seed=123 | epoch=014 | train_loss=0.206481 | stop_loss=1.765840 | stop_auc=0.584895 | stop_bal_acc@0.5=0.567378 | stop_acc@0.5=0.565959 | lr=2.250000e-04
+cv_fold2 | seed=123 | epoch=015 | train_loss=0.198272 | stop_loss=1.808756 | stop_auc=0.588595 | stop_bal_acc@0.5=0.569040 | stop_acc@0.5=0.558971 | lr=1.125000e-04
+Early stopping for cv_fold2 | seed=123 at epoch 15
+Fold 2 | seed=123 | val_auc=0.544689 | val_bal_acc@0.5=0.537590
+
+--- Training cv_fold2 | seed=999 ---
+Trainable params: 410,241
+cv_fold2 | seed=999 | epoch=001 | train_loss=0.689392 | stop_loss=0.683909 | stop_auc=0.533856 | stop_bal_acc@0.5=0.524405 | stop_acc@0.5=0.545416 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=002 | train_loss=0.670094 | stop_loss=0.717567 | stop_auc=0.527970 | stop_bal_acc@0.5=0.507934 | stop_acc@0.5=0.508524 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=003 | train_loss=0.625429 | stop_loss=0.795264 | stop_auc=0.546559 | stop_bal_acc@0.5=0.541125 | stop_acc@0.5=0.546954 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=004 | train_loss=0.568970 | stop_loss=0.840788 | stop_auc=0.572737 | stop_bal_acc@0.5=0.550409 | stop_acc@0.5=0.557155 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=005 | train_loss=0.501686 | stop_loss=1.028553 | stop_auc=0.552655 | stop_bal_acc@0.5=0.547898 | stop_acc@0.5=0.545975 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=006 | train_loss=0.452862 | stop_loss=1.101869 | stop_auc=0.579412 | stop_bal_acc@0.5=0.573188 | stop_acc@0.5=0.560928 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=007 | train_loss=0.397369 | stop_loss=1.177799 | stop_auc=0.586222 | stop_bal_acc@0.5=0.563860 | stop_acc@0.5=0.552404 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=008 | train_loss=0.363549 | stop_loss=1.189334 | stop_auc=0.609305 | stop_bal_acc@0.5=0.580023 | stop_acc@0.5=0.571409 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=009 | train_loss=0.328267 | stop_loss=1.413071 | stop_auc=0.596586 | stop_bal_acc@0.5=0.567751 | stop_acc@0.5=0.553522 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=010 | train_loss=0.300522 | stop_loss=1.467201 | stop_auc=0.586157 | stop_bal_acc@0.5=0.555594 | stop_acc@0.5=0.551984 | lr=4.500000e-04
+cv_fold2 | seed=999 | epoch=011 | train_loss=0.277742 | stop_loss=1.481086 | stop_auc=0.600923 | stop_bal_acc@0.5=0.561720 | stop_acc@0.5=0.558413 | lr=2.250000e-04
+cv_fold2 | seed=999 | epoch=012 | train_loss=0.239558 | stop_loss=1.549541 | stop_auc=0.607777 | stop_bal_acc@0.5=0.575562 | stop_acc@0.5=0.571409 | lr=2.250000e-04
+cv_fold2 | seed=999 | epoch=013 | train_loss=0.225818 | stop_loss=1.629924 | stop_auc=0.618893 | stop_bal_acc@0.5=0.574467 | stop_acc@0.5=0.563862 | lr=2.250000e-04
+cv_fold2 | seed=999 | epoch=014 | train_loss=0.218963 | stop_loss=1.609572 | stop_auc=0.621979 | stop_bal_acc@0.5=0.584078 | stop_acc@0.5=0.575461 | lr=2.250000e-04
+cv_fold2 | seed=999 | epoch=015 | train_loss=0.207137 | stop_loss=1.635953 | stop_auc=0.615570 | stop_bal_acc@0.5=0.580775 | stop_acc@0.5=0.569312 | lr=2.250000e-04
+cv_fold2 | seed=999 | epoch=016 | train_loss=0.199979 | stop_loss=1.616471 | stop_auc=0.612853 | stop_bal_acc@0.5=0.579457 | stop_acc@0.5=0.569312 | lr=2.250000e-04
+cv_fold2 | seed=999 | epoch=017 | train_loss=0.196818 | stop_loss=1.659291 | stop_auc=0.615578 | stop_bal_acc@0.5=0.575025 | stop_acc@0.5=0.563862 | lr=1.125000e-04
+cv_fold2 | seed=999 | epoch=018 | train_loss=0.178918 | stop_loss=1.712742 | stop_auc=0.614181 | stop_bal_acc@0.5=0.580577 | stop_acc@0.5=0.574623 | lr=1.125000e-04
+cv_fold2 | seed=999 | epoch=019 | train_loss=0.175171 | stop_loss=1.754444 | stop_auc=0.610304 | stop_bal_acc@0.5=0.579137 | stop_acc@0.5=0.569592 | lr=1.125000e-04
+cv_fold2 | seed=999 | epoch=020 | train_loss=0.170424 | stop_loss=1.747245 | stop_auc=0.607063 | stop_bal_acc@0.5=0.582251 | stop_acc@0.5=0.575042 | lr=5.625000e-05
+Early stopping for cv_fold2 | seed=999 at epoch 20
+Fold 2 | seed=999 | val_auc=0.560874 | val_bal_acc@0.5=0.547623
+
+--- Training cv_fold2 | seed=5555 ---
+Trainable params: 410,241
+cv_fold2 | seed=5555 | epoch=001 | train_loss=0.688900 | stop_loss=0.688818 | stop_auc=0.514970 | stop_bal_acc@0.5=0.535502 | stop_acc@0.5=0.573784 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=002 | train_loss=0.671403 | stop_loss=0.700125 | stop_auc=0.502145 | stop_bal_acc@0.5=0.535015 | stop_acc@0.5=0.574762 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=003 | train_loss=0.641816 | stop_loss=0.764984 | stop_auc=0.475382 | stop_bal_acc@0.5=0.510763 | stop_acc@0.5=0.548631 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=004 | train_loss=0.590211 | stop_loss=0.867338 | stop_auc=0.520022 | stop_bal_acc@0.5=0.527585 | stop_acc@0.5=0.529067 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=005 | train_loss=0.529635 | stop_loss=0.987491 | stop_auc=0.536738 | stop_bal_acc@0.5=0.546105 | stop_acc@0.5=0.558413 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=006 | train_loss=0.466115 | stop_loss=1.132886 | stop_auc=0.531329 | stop_bal_acc@0.5=0.524567 | stop_acc@0.5=0.517887 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=007 | train_loss=0.415416 | stop_loss=1.294722 | stop_auc=0.553562 | stop_bal_acc@0.5=0.548753 | stop_acc@0.5=0.552823 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=008 | train_loss=0.368037 | stop_loss=1.367735 | stop_auc=0.551197 | stop_bal_acc@0.5=0.541174 | stop_acc@0.5=0.538010 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=009 | train_loss=0.330666 | stop_loss=1.366287 | stop_auc=0.556450 | stop_bal_acc@0.5=0.557245 | stop_acc@0.5=0.555059 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=010 | train_loss=0.301235 | stop_loss=1.539440 | stop_auc=0.569068 | stop_bal_acc@0.5=0.554495 | stop_acc@0.5=0.556177 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=011 | train_loss=0.274049 | stop_loss=1.577140 | stop_auc=0.573916 | stop_bal_acc@0.5=0.551081 | stop_acc@0.5=0.556037 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=012 | train_loss=0.255037 | stop_loss=1.604725 | stop_auc=0.548747 | stop_bal_acc@0.5=0.543119 | stop_acc@0.5=0.555618 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=013 | train_loss=0.233940 | stop_loss=1.723523 | stop_auc=0.552348 | stop_bal_acc@0.5=0.540688 | stop_acc@0.5=0.538988 | lr=4.500000e-04
+cv_fold2 | seed=5555 | epoch=014 | train_loss=0.221720 | stop_loss=1.629616 | stop_auc=0.558203 | stop_bal_acc@0.5=0.551033 | stop_acc@0.5=0.556875 | lr=2.250000e-04
+cv_fold2 | seed=5555 | epoch=015 | train_loss=0.189386 | stop_loss=1.811195 | stop_auc=0.553950 | stop_bal_acc@0.5=0.539547 | stop_acc@0.5=0.545277 | lr=2.250000e-04
+cv_fold2 | seed=5555 | epoch=016 | train_loss=0.179233 | stop_loss=1.902512 | stop_auc=0.551937 | stop_bal_acc@0.5=0.529027 | stop_acc@0.5=0.530464 | lr=2.250000e-04
+cv_fold2 | seed=5555 | epoch=017 | train_loss=0.175201 | stop_loss=1.890515 | stop_auc=0.547291 | stop_bal_acc@0.5=0.535755 | stop_acc@0.5=0.535215 | lr=1.125000e-04
+Early stopping for cv_fold2 | seed=5555 at epoch 17
+Fold 2 | seed=5555 | val_auc=0.553108 | val_bal_acc@0.5=0.533657
+
+--- Training cv_fold2 | seed=8080 ---
+Trainable params: 410,241
+cv_fold2 | seed=8080 | epoch=001 | train_loss=0.687677 | stop_loss=0.712196 | stop_auc=0.476016 | stop_bal_acc@0.5=0.482829 | stop_acc@0.5=0.493432 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=002 | train_loss=0.664187 | stop_loss=0.779090 | stop_auc=0.494229 | stop_bal_acc@0.5=0.518229 | stop_acc@0.5=0.526411 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=003 | train_loss=0.615780 | stop_loss=0.812434 | stop_auc=0.519439 | stop_bal_acc@0.5=0.523190 | stop_acc@0.5=0.537311 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=004 | train_loss=0.551681 | stop_loss=0.928720 | stop_auc=0.550146 | stop_bal_acc@0.5=0.533357 | stop_acc@0.5=0.526970 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=005 | train_loss=0.479563 | stop_loss=1.048094 | stop_auc=0.552963 | stop_bal_acc@0.5=0.533518 | stop_acc@0.5=0.525014 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=006 | train_loss=0.417012 | stop_loss=1.138493 | stop_auc=0.593146 | stop_bal_acc@0.5=0.568641 | stop_acc@0.5=0.560648 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=007 | train_loss=0.373532 | stop_loss=1.249462 | stop_auc=0.583150 | stop_bal_acc@0.5=0.555241 | stop_acc@0.5=0.552404 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=008 | train_loss=0.336734 | stop_loss=1.269337 | stop_auc=0.600776 | stop_bal_acc@0.5=0.585669 | stop_acc@0.5=0.593069 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=009 | train_loss=0.302808 | stop_loss=1.363711 | stop_auc=0.590707 | stop_bal_acc@0.5=0.573968 | stop_acc@0.5=0.583007 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=010 | train_loss=0.276123 | stop_loss=1.516854 | stop_auc=0.595581 | stop_bal_acc@0.5=0.564059 | stop_acc@0.5=0.568614 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=011 | train_loss=0.259766 | stop_loss=1.396310 | stop_auc=0.603258 | stop_bal_acc@0.5=0.573677 | stop_acc@0.5=0.577837 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=012 | train_loss=0.241335 | stop_loss=1.462165 | stop_auc=0.596968 | stop_bal_acc@0.5=0.567092 | stop_acc@0.5=0.575042 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=013 | train_loss=0.227586 | stop_loss=1.520956 | stop_auc=0.599160 | stop_bal_acc@0.5=0.574034 | stop_acc@0.5=0.578256 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=014 | train_loss=0.217123 | stop_loss=1.530111 | stop_auc=0.623070 | stop_bal_acc@0.5=0.584164 | stop_acc@0.5=0.588737 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=015 | train_loss=0.202508 | stop_loss=1.494322 | stop_auc=0.628738 | stop_bal_acc@0.5=0.596277 | stop_acc@0.5=0.600475 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=016 | train_loss=0.192050 | stop_loss=1.494088 | stop_auc=0.617973 | stop_bal_acc@0.5=0.587658 | stop_acc@0.5=0.596003 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=017 | train_loss=0.189158 | stop_loss=1.530202 | stop_auc=0.635926 | stop_bal_acc@0.5=0.592608 | stop_acc@0.5=0.591392 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=018 | train_loss=0.181871 | stop_loss=1.622689 | stop_auc=0.614928 | stop_bal_acc@0.5=0.581846 | stop_acc@0.5=0.596562 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=019 | train_loss=0.176584 | stop_loss=1.565028 | stop_auc=0.625335 | stop_bal_acc@0.5=0.590075 | stop_acc@0.5=0.591811 | lr=4.500000e-04
+cv_fold2 | seed=8080 | epoch=020 | train_loss=0.168519 | stop_loss=1.673290 | stop_auc=0.609906 | stop_bal_acc@0.5=0.587333 | stop_acc@0.5=0.590973 | lr=2.250000e-04
+cv_fold2 | seed=8080 | epoch=021 | train_loss=0.150715 | stop_loss=1.646258 | stop_auc=0.621868 | stop_bal_acc@0.5=0.588405 | stop_acc@0.5=0.592650 | lr=2.250000e-04
+cv_fold2 | seed=8080 | epoch=022 | train_loss=0.144372 | stop_loss=1.602232 | stop_auc=0.642853 | stop_bal_acc@0.5=0.601049 | stop_acc@0.5=0.606205 | lr=2.250000e-04
+cv_fold2 | seed=8080 | epoch=023 | train_loss=0.143512 | stop_loss=1.648776 | stop_auc=0.640259 | stop_bal_acc@0.5=0.604320 | stop_acc@0.5=0.604388 | lr=2.250000e-04
+cv_fold2 | seed=8080 | epoch=024 | train_loss=0.140602 | stop_loss=1.611378 | stop_auc=0.633615 | stop_bal_acc@0.5=0.602672 | stop_acc@0.5=0.610676 | lr=2.250000e-04
+cv_fold2 | seed=8080 | epoch=025 | train_loss=0.138579 | stop_loss=1.580241 | stop_auc=0.648275 | stop_bal_acc@0.5=0.604531 | stop_acc@0.5=0.606484 | lr=2.250000e-04
+cv_fold2 | seed=8080 | epoch=026 | train_loss=0.133747 | stop_loss=1.679605 | stop_auc=0.638154 | stop_bal_acc@0.5=0.599338 | stop_acc@0.5=0.601034 | lr=2.250000e-04
+cv_fold2 | seed=8080 | epoch=027 | train_loss=0.134114 | stop_loss=1.565556 | stop_auc=0.639824 | stop_bal_acc@0.5=0.612045 | stop_acc@0.5=0.621996 | lr=2.250000e-04
+cv_fold2 | seed=8080 | epoch=028 | train_loss=0.132164 | stop_loss=1.618799 | stop_auc=0.633502 | stop_bal_acc@0.5=0.590541 | stop_acc@0.5=0.594326 | lr=1.125000e-04
+cv_fold2 | seed=8080 | epoch=029 | train_loss=0.124119 | stop_loss=1.668850 | stop_auc=0.633666 | stop_bal_acc@0.5=0.600724 | stop_acc@0.5=0.605226 | lr=1.125000e-04
+cv_fold2 | seed=8080 | epoch=030 | train_loss=0.120780 | stop_loss=1.725051 | stop_auc=0.625446 | stop_bal_acc@0.5=0.596139 | stop_acc@0.5=0.599776 | lr=1.125000e-04
+cv_fold2 | seed=8080 | epoch=031 | train_loss=0.120738 | stop_loss=1.655469 | stop_auc=0.634265 | stop_bal_acc@0.5=0.605673 | stop_acc@0.5=0.613192 | lr=5.625000e-05
+Early stopping for cv_fold2 | seed=8080 at epoch 31
+Fold 2 | seed=8080 | val_auc=0.553970 | val_bal_acc@0.5=0.536653
+
+--- Training cv_fold2 | seed=2718 ---
+Trainable params: 410,241
+cv_fold2 | seed=2718 | epoch=001 | train_loss=0.691398 | stop_loss=0.688406 | stop_auc=0.499299 | stop_bal_acc@0.5=0.512983 | stop_acc@0.5=0.546115 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=002 | train_loss=0.672000 | stop_loss=0.768871 | stop_auc=0.455581 | stop_bal_acc@0.5=0.501081 | stop_acc@0.5=0.523477 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=003 | train_loss=0.620508 | stop_loss=0.813038 | stop_auc=0.502782 | stop_bal_acc@0.5=0.515213 | stop_acc@0.5=0.537172 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=004 | train_loss=0.557581 | stop_loss=0.957939 | stop_auc=0.539155 | stop_bal_acc@0.5=0.536452 | stop_acc@0.5=0.553382 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=005 | train_loss=0.496101 | stop_loss=1.088384 | stop_auc=0.523148 | stop_bal_acc@0.5=0.517016 | stop_acc@0.5=0.531722 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=006 | train_loss=0.436159 | stop_loss=1.327147 | stop_auc=0.535529 | stop_bal_acc@0.5=0.528699 | stop_acc@0.5=0.520123 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=007 | train_loss=0.381462 | stop_loss=1.477590 | stop_auc=0.544824 | stop_bal_acc@0.5=0.553249 | stop_acc@0.5=0.548631 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=008 | train_loss=0.345362 | stop_loss=1.442102 | stop_auc=0.556825 | stop_bal_acc@0.5=0.563299 | stop_acc@0.5=0.551565 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=009 | train_loss=0.314870 | stop_loss=1.605675 | stop_auc=0.550197 | stop_bal_acc@0.5=0.543191 | stop_acc@0.5=0.535075 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=010 | train_loss=0.289232 | stop_loss=1.577545 | stop_auc=0.558222 | stop_bal_acc@0.5=0.552733 | stop_acc@0.5=0.546534 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=011 | train_loss=0.269902 | stop_loss=1.687880 | stop_auc=0.548192 | stop_bal_acc@0.5=0.549732 | stop_acc@0.5=0.544019 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=012 | train_loss=0.255278 | stop_loss=1.669425 | stop_auc=0.562902 | stop_bal_acc@0.5=0.571377 | stop_acc@0.5=0.568753 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=013 | train_loss=0.238806 | stop_loss=1.738600 | stop_auc=0.560783 | stop_bal_acc@0.5=0.544303 | stop_acc@0.5=0.534237 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=014 | train_loss=0.225529 | stop_loss=1.674172 | stop_auc=0.574952 | stop_bal_acc@0.5=0.570522 | stop_acc@0.5=0.570430 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=015 | train_loss=0.210815 | stop_loss=1.664184 | stop_auc=0.579684 | stop_bal_acc@0.5=0.573717 | stop_acc@0.5=0.579374 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=016 | train_loss=0.204609 | stop_loss=1.707313 | stop_auc=0.570131 | stop_bal_acc@0.5=0.573314 | stop_acc@0.5=0.575741 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=017 | train_loss=0.197187 | stop_loss=1.653895 | stop_auc=0.586701 | stop_bal_acc@0.5=0.588049 | stop_acc@0.5=0.588178 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=018 | train_loss=0.185668 | stop_loss=1.743749 | stop_auc=0.587526 | stop_bal_acc@0.5=0.583826 | stop_acc@0.5=0.571409 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=019 | train_loss=0.180129 | stop_loss=1.672602 | stop_auc=0.591661 | stop_bal_acc@0.5=0.567968 | stop_acc@0.5=0.561347 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=020 | train_loss=0.174555 | stop_loss=1.665088 | stop_auc=0.588899 | stop_bal_acc@0.5=0.586736 | stop_acc@0.5=0.580911 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=021 | train_loss=0.165068 | stop_loss=1.878742 | stop_auc=0.590877 | stop_bal_acc@0.5=0.581016 | stop_acc@0.5=0.570430 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=022 | train_loss=0.166034 | stop_loss=1.719821 | stop_auc=0.602362 | stop_bal_acc@0.5=0.582968 | stop_acc@0.5=0.576719 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=023 | train_loss=0.160809 | stop_loss=1.809701 | stop_auc=0.589646 | stop_bal_acc@0.5=0.571101 | stop_acc@0.5=0.575880 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=024 | train_loss=0.156924 | stop_loss=1.732813 | stop_auc=0.590458 | stop_bal_acc@0.5=0.576090 | stop_acc@0.5=0.563862 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=025 | train_loss=0.156122 | stop_loss=1.685670 | stop_auc=0.603211 | stop_bal_acc@0.5=0.594534 | stop_acc@0.5=0.586920 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=026 | train_loss=0.149707 | stop_loss=1.773461 | stop_auc=0.602415 | stop_bal_acc@0.5=0.573703 | stop_acc@0.5=0.563024 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=027 | train_loss=0.143379 | stop_loss=1.905199 | stop_auc=0.588599 | stop_bal_acc@0.5=0.581269 | stop_acc@0.5=0.565959 | lr=4.500000e-04
+cv_fold2 | seed=2718 | epoch=028 | train_loss=0.147506 | stop_loss=1.851136 | stop_auc=0.578275 | stop_bal_acc@0.5=0.561501 | stop_acc@0.5=0.562745 | lr=2.250000e-04
+cv_fold2 | seed=2718 | epoch=029 | train_loss=0.126525 | stop_loss=1.820830 | stop_auc=0.599836 | stop_bal_acc@0.5=0.577452 | stop_acc@0.5=0.575182 | lr=2.250000e-04
+cv_fold2 | seed=2718 | epoch=030 | train_loss=0.124128 | stop_loss=1.801659 | stop_auc=0.602252 | stop_bal_acc@0.5=0.578189 | stop_acc@0.5=0.573365 | lr=2.250000e-04
+cv_fold2 | seed=2718 | epoch=031 | train_loss=0.121465 | stop_loss=1.824627 | stop_auc=0.606237 | stop_bal_acc@0.5=0.585440 | stop_acc@0.5=0.582309 | lr=2.250000e-04
+cv_fold2 | seed=2718 | epoch=032 | train_loss=0.119270 | stop_loss=1.819202 | stop_auc=0.607981 | stop_bal_acc@0.5=0.582819 | stop_acc@0.5=0.577557 | lr=2.250000e-04
+Fold 2 | seed=2718 | val_auc=0.563981 | val_bal_acc@0.5=0.549902
+
+Fold 3: train=60842, stop=10736, val=23866
+
+--- Training cv_fold3 | seed=42 ---
+Trainable params: 410,241
+cv_fold3 | seed=42 | epoch=001 | train_loss=0.688654 | stop_loss=0.711094 | stop_auc=0.489557 | stop_bal_acc@0.5=0.494405 | stop_acc@0.5=0.504005 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=002 | train_loss=0.671125 | stop_loss=0.770902 | stop_auc=0.489967 | stop_bal_acc@0.5=0.496779 | stop_acc@0.5=0.498230 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=003 | train_loss=0.639072 | stop_loss=0.845748 | stop_auc=0.523135 | stop_bal_acc@0.5=0.523936 | stop_acc@0.5=0.524497 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=004 | train_loss=0.585425 | stop_loss=0.924918 | stop_auc=0.521244 | stop_bal_acc@0.5=0.522068 | stop_acc@0.5=0.531483 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=005 | train_loss=0.521372 | stop_loss=1.136879 | stop_auc=0.537765 | stop_bal_acc@0.5=0.538644 | stop_acc@0.5=0.545082 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=006 | train_loss=0.450535 | stop_loss=1.336787 | stop_auc=0.535076 | stop_bal_acc@0.5=0.522640 | stop_acc@0.5=0.529434 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=007 | train_loss=0.394143 | stop_loss=1.428199 | stop_auc=0.544589 | stop_bal_acc@0.5=0.528187 | stop_acc@0.5=0.533718 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=008 | train_loss=0.351012 | stop_loss=1.506111 | stop_auc=0.548670 | stop_bal_acc@0.5=0.530274 | stop_acc@0.5=0.530458 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=009 | train_loss=0.313971 | stop_loss=1.539207 | stop_auc=0.551507 | stop_bal_acc@0.5=0.541416 | stop_acc@0.5=0.544896 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=010 | train_loss=0.292583 | stop_loss=1.693642 | stop_auc=0.538195 | stop_bal_acc@0.5=0.530784 | stop_acc@0.5=0.535768 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=011 | train_loss=0.265841 | stop_loss=1.604632 | stop_auc=0.558786 | stop_bal_acc@0.5=0.538964 | stop_acc@0.5=0.541915 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=012 | train_loss=0.250897 | stop_loss=1.573990 | stop_auc=0.563943 | stop_bal_acc@0.5=0.545541 | stop_acc@0.5=0.549367 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=013 | train_loss=0.234421 | stop_loss=1.759356 | stop_auc=0.553505 | stop_bal_acc@0.5=0.529638 | stop_acc@0.5=0.536047 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=014 | train_loss=0.221677 | stop_loss=1.588649 | stop_auc=0.566686 | stop_bal_acc@0.5=0.554163 | stop_acc@0.5=0.556259 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=015 | train_loss=0.210521 | stop_loss=1.696516 | stop_auc=0.557889 | stop_bal_acc@0.5=0.536029 | stop_acc@0.5=0.537910 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=016 | train_loss=0.200664 | stop_loss=1.783227 | stop_auc=0.566263 | stop_bal_acc@0.5=0.537338 | stop_acc@0.5=0.540425 | lr=4.500000e-04
+cv_fold3 | seed=42 | epoch=017 | train_loss=0.189606 | stop_loss=1.821047 | stop_auc=0.558382 | stop_bal_acc@0.5=0.530983 | stop_acc@0.5=0.537165 | lr=2.250000e-04
+cv_fold3 | seed=42 | epoch=018 | train_loss=0.168681 | stop_loss=1.803035 | stop_auc=0.570909 | stop_bal_acc@0.5=0.549736 | stop_acc@0.5=0.553651 | lr=2.250000e-04
+cv_fold3 | seed=42 | epoch=019 | train_loss=0.161631 | stop_loss=1.879700 | stop_auc=0.568254 | stop_bal_acc@0.5=0.537298 | stop_acc@0.5=0.541542 | lr=2.250000e-04
+cv_fold3 | seed=42 | epoch=020 | train_loss=0.158673 | stop_loss=1.885765 | stop_auc=0.567008 | stop_bal_acc@0.5=0.539366 | stop_acc@0.5=0.541170 | lr=2.250000e-04
+cv_fold3 | seed=42 | epoch=021 | train_loss=0.151569 | stop_loss=1.804598 | stop_auc=0.571884 | stop_bal_acc@0.5=0.544124 | stop_acc@0.5=0.549832 | lr=2.250000e-04
+cv_fold3 | seed=42 | epoch=022 | train_loss=0.152502 | stop_loss=1.861443 | stop_auc=0.569968 | stop_bal_acc@0.5=0.544024 | stop_acc@0.5=0.547131 | lr=2.250000e-04
+cv_fold3 | seed=42 | epoch=023 | train_loss=0.147620 | stop_loss=1.902394 | stop_auc=0.564738 | stop_bal_acc@0.5=0.539162 | stop_acc@0.5=0.542101 | lr=2.250000e-04
+cv_fold3 | seed=42 | epoch=024 | train_loss=0.145050 | stop_loss=1.934224 | stop_auc=0.551752 | stop_bal_acc@0.5=0.536043 | stop_acc@0.5=0.538562 | lr=1.125000e-04
+cv_fold3 | seed=42 | epoch=025 | train_loss=0.136457 | stop_loss=1.872738 | stop_auc=0.571488 | stop_bal_acc@0.5=0.546703 | stop_acc@0.5=0.550577 | lr=1.125000e-04
+cv_fold3 | seed=42 | epoch=026 | train_loss=0.132554 | stop_loss=1.947217 | stop_auc=0.560197 | stop_bal_acc@0.5=0.544380 | stop_acc@0.5=0.546386 | lr=1.125000e-04
+cv_fold3 | seed=42 | epoch=027 | train_loss=0.133521 | stop_loss=1.889483 | stop_auc=0.565924 | stop_bal_acc@0.5=0.543295 | stop_acc@0.5=0.547317 | lr=5.625000e-05
+Early stopping for cv_fold3 | seed=42 at epoch 27
+Fold 3 | seed=42 | val_auc=0.580485 | val_bal_acc@0.5=0.555375
+
+--- Training cv_fold3 | seed=1337 ---
+Trainable params: 410,241
+cv_fold3 | seed=1337 | epoch=001 | train_loss=0.690085 | stop_loss=0.721517 | stop_auc=0.493648 | stop_bal_acc@0.5=0.510938 | stop_acc@0.5=0.510246 | lr=4.500000e-04
+cv_fold3 | seed=1337 | epoch=002 | train_loss=0.675022 | stop_loss=0.729534 | stop_auc=0.508632 | stop_bal_acc@0.5=0.528319 | stop_acc@0.5=0.538189 | lr=4.500000e-04
+cv_fold3 | seed=1337 | epoch=003 | train_loss=0.638917 | stop_loss=0.756638 | stop_auc=0.546822 | stop_bal_acc@0.5=0.519301 | stop_acc@0.5=0.529154 | lr=4.500000e-04
+cv_fold3 | seed=1337 | epoch=004 | train_loss=0.574171 | stop_loss=0.914595 | stop_auc=0.583499 | stop_bal_acc@0.5=0.535271 | stop_acc@0.5=0.544616 | lr=4.500000e-04
+cv_fold3 | seed=1337 | epoch=005 | train_loss=0.511673 | stop_loss=0.929142 | stop_auc=0.608660 | stop_bal_acc@0.5=0.585781 | stop_acc@0.5=0.591934 | lr=4.500000e-04
+cv_fold3 | seed=1337 | epoch=006 | train_loss=0.446439 | stop_loss=1.087616 | stop_auc=0.610495 | stop_bal_acc@0.5=0.571143 | stop_acc@0.5=0.579359 | lr=4.500000e-04
+cv_fold3 | seed=1337 | epoch=007 | train_loss=0.388329 | stop_loss=1.237563 | stop_auc=0.603554 | stop_bal_acc@0.5=0.559214 | stop_acc@0.5=0.563525 | lr=4.500000e-04
+cv_fold3 | seed=1337 | epoch=008 | train_loss=0.350540 | stop_loss=1.337456 | stop_auc=0.585161 | stop_bal_acc@0.5=0.560490 | stop_acc@0.5=0.557843 | lr=4.500000e-04
+cv_fold3 | seed=1337 | epoch=009 | train_loss=0.316556 | stop_loss=1.357913 | stop_auc=0.598976 | stop_bal_acc@0.5=0.563066 | stop_acc@0.5=0.564735 | lr=2.250000e-04
+cv_fold3 | seed=1337 | epoch=010 | train_loss=0.271276 | stop_loss=1.492061 | stop_auc=0.593833 | stop_bal_acc@0.5=0.562903 | stop_acc@0.5=0.567157 | lr=2.250000e-04
+cv_fold3 | seed=1337 | epoch=011 | train_loss=0.254654 | stop_loss=1.571509 | stop_auc=0.592377 | stop_bal_acc@0.5=0.565684 | stop_acc@0.5=0.570138 | lr=2.250000e-04
+cv_fold3 | seed=1337 | epoch=012 | train_loss=0.241894 | stop_loss=1.576956 | stop_auc=0.590451 | stop_bal_acc@0.5=0.561343 | stop_acc@0.5=0.567996 | lr=1.125000e-04
+Early stopping for cv_fold3 | seed=1337 at epoch 12
+Fold 3 | seed=1337 | val_auc=0.566864 | val_bal_acc@0.5=0.551713
+
+--- Training cv_fold3 | seed=2026 ---
+Trainable params: 410,241
+cv_fold3 | seed=2026 | epoch=001 | train_loss=0.689911 | stop_loss=0.703600 | stop_auc=0.512807 | stop_bal_acc@0.5=0.525147 | stop_acc@0.5=0.528130 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=002 | train_loss=0.677733 | stop_loss=0.721854 | stop_auc=0.512258 | stop_bal_acc@0.5=0.500747 | stop_acc@0.5=0.507638 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=003 | train_loss=0.639982 | stop_loss=0.796857 | stop_auc=0.540287 | stop_bal_acc@0.5=0.530160 | stop_acc@0.5=0.529527 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=004 | train_loss=0.584494 | stop_loss=0.940742 | stop_auc=0.565381 | stop_bal_acc@0.5=0.538422 | stop_acc@0.5=0.539680 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=005 | train_loss=0.511884 | stop_loss=0.980438 | stop_auc=0.564278 | stop_bal_acc@0.5=0.542871 | stop_acc@0.5=0.546479 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=006 | train_loss=0.450992 | stop_loss=1.167901 | stop_auc=0.580972 | stop_bal_acc@0.5=0.566729 | stop_acc@0.5=0.568741 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=007 | train_loss=0.397161 | stop_loss=1.234782 | stop_auc=0.592467 | stop_bal_acc@0.5=0.571143 | stop_acc@0.5=0.575354 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=008 | train_loss=0.358425 | stop_loss=1.227969 | stop_auc=0.587006 | stop_bal_acc@0.5=0.570881 | stop_acc@0.5=0.574888 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=009 | train_loss=0.322396 | stop_loss=1.350950 | stop_auc=0.585774 | stop_bal_acc@0.5=0.571254 | stop_acc@0.5=0.570231 | lr=4.500000e-04
+cv_fold3 | seed=2026 | epoch=010 | train_loss=0.291902 | stop_loss=1.518108 | stop_auc=0.579921 | stop_bal_acc@0.5=0.567641 | stop_acc@0.5=0.568275 | lr=2.250000e-04
+cv_fold3 | seed=2026 | epoch=011 | train_loss=0.251266 | stop_loss=1.560282 | stop_auc=0.591876 | stop_bal_acc@0.5=0.567170 | stop_acc@0.5=0.569858 | lr=2.250000e-04
+cv_fold3 | seed=2026 | epoch=012 | train_loss=0.236336 | stop_loss=1.623292 | stop_auc=0.583844 | stop_bal_acc@0.5=0.564844 | stop_acc@0.5=0.567437 | lr=2.250000e-04
+cv_fold3 | seed=2026 | epoch=013 | train_loss=0.227403 | stop_loss=1.618078 | stop_auc=0.583121 | stop_bal_acc@0.5=0.561127 | stop_acc@0.5=0.563711 | lr=1.125000e-04
+Early stopping for cv_fold3 | seed=2026 at epoch 13
+Fold 3 | seed=2026 | val_auc=0.596533 | val_bal_acc@0.5=0.562834
+
+--- Training cv_fold3 | seed=777 ---
+Trainable params: 410,241
+cv_fold3 | seed=777 | epoch=001 | train_loss=0.689525 | stop_loss=0.701724 | stop_auc=0.529625 | stop_bal_acc@0.5=0.519845 | stop_acc@0.5=0.524404 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=002 | train_loss=0.670551 | stop_loss=0.729839 | stop_auc=0.495369 | stop_bal_acc@0.5=0.487421 | stop_acc@0.5=0.502235 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=003 | train_loss=0.629129 | stop_loss=0.803259 | stop_auc=0.544005 | stop_bal_acc@0.5=0.517747 | stop_acc@0.5=0.522262 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=004 | train_loss=0.564702 | stop_loss=0.913496 | stop_auc=0.552659 | stop_bal_acc@0.5=0.533848 | stop_acc@0.5=0.535954 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=005 | train_loss=0.496052 | stop_loss=1.012502 | stop_auc=0.580104 | stop_bal_acc@0.5=0.553727 | stop_acc@0.5=0.552627 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=006 | train_loss=0.433747 | stop_loss=1.206856 | stop_auc=0.578917 | stop_bal_acc@0.5=0.542930 | stop_acc@0.5=0.547690 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=007 | train_loss=0.376045 | stop_loss=1.195771 | stop_auc=0.603764 | stop_bal_acc@0.5=0.572697 | stop_acc@0.5=0.577217 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=008 | train_loss=0.335404 | stop_loss=1.215741 | stop_auc=0.606630 | stop_bal_acc@0.5=0.574066 | stop_acc@0.5=0.576937 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=009 | train_loss=0.303810 | stop_loss=1.405160 | stop_auc=0.592434 | stop_bal_acc@0.5=0.563179 | stop_acc@0.5=0.564456 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=010 | train_loss=0.274781 | stop_loss=1.484929 | stop_auc=0.594322 | stop_bal_acc@0.5=0.561700 | stop_acc@0.5=0.569486 | lr=4.500000e-04
+cv_fold3 | seed=777 | epoch=011 | train_loss=0.253936 | stop_loss=1.649486 | stop_auc=0.589297 | stop_bal_acc@0.5=0.551871 | stop_acc@0.5=0.554210 | lr=2.250000e-04
+cv_fold3 | seed=777 | epoch=012 | train_loss=0.221491 | stop_loss=1.577088 | stop_auc=0.598458 | stop_bal_acc@0.5=0.569914 | stop_acc@0.5=0.572001 | lr=2.250000e-04
+cv_fold3 | seed=777 | epoch=013 | train_loss=0.205990 | stop_loss=1.639808 | stop_auc=0.591133 | stop_bal_acc@0.5=0.557689 | stop_acc@0.5=0.563338 | lr=2.250000e-04
+cv_fold3 | seed=777 | epoch=014 | train_loss=0.200389 | stop_loss=1.626040 | stop_auc=0.595270 | stop_bal_acc@0.5=0.557441 | stop_acc@0.5=0.558495 | lr=1.125000e-04
+Early stopping for cv_fold3 | seed=777 at epoch 14
+Fold 3 | seed=777 | val_auc=0.569381 | val_bal_acc@0.5=0.555262
+
+--- Training cv_fold3 | seed=31415 ---
+Trainable params: 410,241
+cv_fold3 | seed=31415 | epoch=001 | train_loss=0.689561 | stop_loss=0.700923 | stop_auc=0.504293 | stop_bal_acc@0.5=0.488579 | stop_acc@0.5=0.499162 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=002 | train_loss=0.674037 | stop_loss=0.766334 | stop_auc=0.483920 | stop_bal_acc@0.5=0.508498 | stop_acc@0.5=0.514903 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=003 | train_loss=0.642542 | stop_loss=0.846265 | stop_auc=0.528617 | stop_bal_acc@0.5=0.527332 | stop_acc@0.5=0.527943 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=004 | train_loss=0.588561 | stop_loss=0.905587 | stop_auc=0.553989 | stop_bal_acc@0.5=0.546107 | stop_acc@0.5=0.548808 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=005 | train_loss=0.521750 | stop_loss=1.045825 | stop_auc=0.578095 | stop_bal_acc@0.5=0.574591 | stop_acc@0.5=0.575075 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=006 | train_loss=0.454003 | stop_loss=1.175771 | stop_auc=0.580390 | stop_bal_acc@0.5=0.560929 | stop_acc@0.5=0.562127 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=007 | train_loss=0.403049 | stop_loss=1.221350 | stop_auc=0.587110 | stop_bal_acc@0.5=0.573308 | stop_acc@0.5=0.575820 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=008 | train_loss=0.358628 | stop_loss=1.319655 | stop_auc=0.584694 | stop_bal_acc@0.5=0.573438 | stop_acc@0.5=0.575447 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=009 | train_loss=0.322436 | stop_loss=1.523888 | stop_auc=0.576867 | stop_bal_acc@0.5=0.562134 | stop_acc@0.5=0.563059 | lr=4.500000e-04
+cv_fold3 | seed=31415 | epoch=010 | train_loss=0.293336 | stop_loss=1.524229 | stop_auc=0.586241 | stop_bal_acc@0.5=0.567550 | stop_acc@0.5=0.570138 | lr=2.250000e-04
+cv_fold3 | seed=31415 | epoch=011 | train_loss=0.252599 | stop_loss=1.568499 | stop_auc=0.589681 | stop_bal_acc@0.5=0.573440 | stop_acc@0.5=0.575075 | lr=2.250000e-04
+cv_fold3 | seed=31415 | epoch=012 | train_loss=0.242671 | stop_loss=1.600174 | stop_auc=0.582545 | stop_bal_acc@0.5=0.568357 | stop_acc@0.5=0.567064 | lr=2.250000e-04
+cv_fold3 | seed=31415 | epoch=013 | train_loss=0.230117 | stop_loss=1.681211 | stop_auc=0.579623 | stop_bal_acc@0.5=0.569406 | stop_acc@0.5=0.570138 | lr=2.250000e-04
+cv_fold3 | seed=31415 | epoch=014 | train_loss=0.223192 | stop_loss=1.649611 | stop_auc=0.590789 | stop_bal_acc@0.5=0.563934 | stop_acc@0.5=0.563525 | lr=2.250000e-04
+cv_fold3 | seed=31415 | epoch=015 | train_loss=0.214372 | stop_loss=1.656127 | stop_auc=0.578502 | stop_bal_acc@0.5=0.553110 | stop_acc@0.5=0.555328 | lr=2.250000e-04
+cv_fold3 | seed=31415 | epoch=016 | train_loss=0.203704 | stop_loss=1.711139 | stop_auc=0.589519 | stop_bal_acc@0.5=0.564860 | stop_acc@0.5=0.565294 | lr=2.250000e-04
+cv_fold3 | seed=31415 | epoch=017 | train_loss=0.202307 | stop_loss=1.716303 | stop_auc=0.579575 | stop_bal_acc@0.5=0.553846 | stop_acc@0.5=0.556259 | lr=1.125000e-04
+cv_fold3 | seed=31415 | epoch=018 | train_loss=0.185508 | stop_loss=1.736095 | stop_auc=0.586259 | stop_bal_acc@0.5=0.559370 | stop_acc@0.5=0.560358 | lr=1.125000e-04
+cv_fold3 | seed=31415 | epoch=019 | train_loss=0.180517 | stop_loss=1.742441 | stop_auc=0.585075 | stop_bal_acc@0.5=0.564923 | stop_acc@0.5=0.566971 | lr=1.125000e-04
+cv_fold3 | seed=31415 | epoch=020 | train_loss=0.176733 | stop_loss=1.791772 | stop_auc=0.582290 | stop_bal_acc@0.5=0.558092 | stop_acc@0.5=0.559799 | lr=5.625000e-05
+Early stopping for cv_fold3 | seed=31415 at epoch 20
+Fold 3 | seed=31415 | val_auc=0.588777 | val_bal_acc@0.5=0.560393
+
+--- Training cv_fold3 | seed=123 ---
+Trainable params: 410,241
+cv_fold3 | seed=123 | epoch=001 | train_loss=0.688939 | stop_loss=0.699378 | stop_auc=0.495262 | stop_bal_acc@0.5=0.493194 | stop_acc@0.5=0.499162 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=002 | train_loss=0.672050 | stop_loss=0.725188 | stop_auc=0.566260 | stop_bal_acc@0.5=0.566247 | stop_acc@0.5=0.581967 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=003 | train_loss=0.635826 | stop_loss=0.818314 | stop_auc=0.542355 | stop_bal_acc@0.5=0.522922 | stop_acc@0.5=0.532042 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=004 | train_loss=0.585737 | stop_loss=0.912394 | stop_auc=0.581530 | stop_bal_acc@0.5=0.571105 | stop_acc@0.5=0.570883 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=005 | train_loss=0.521509 | stop_loss=1.019153 | stop_auc=0.575476 | stop_bal_acc@0.5=0.558241 | stop_acc@0.5=0.561941 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=006 | train_loss=0.460169 | stop_loss=1.111242 | stop_auc=0.583049 | stop_bal_acc@0.5=0.553609 | stop_acc@0.5=0.548808 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=007 | train_loss=0.408763 | stop_loss=1.177291 | stop_auc=0.597101 | stop_bal_acc@0.5=0.577423 | stop_acc@0.5=0.574516 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=008 | train_loss=0.363717 | stop_loss=1.269379 | stop_auc=0.577159 | stop_bal_acc@0.5=0.566161 | stop_acc@0.5=0.561848 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=009 | train_loss=0.327030 | stop_loss=1.315459 | stop_auc=0.610357 | stop_bal_acc@0.5=0.580883 | stop_acc@0.5=0.579266 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=010 | train_loss=0.302531 | stop_loss=1.454963 | stop_auc=0.605401 | stop_bal_acc@0.5=0.568996 | stop_acc@0.5=0.564549 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=011 | train_loss=0.275380 | stop_loss=1.405109 | stop_auc=0.599774 | stop_bal_acc@0.5=0.562932 | stop_acc@0.5=0.563245 | lr=4.500000e-04
+cv_fold3 | seed=123 | epoch=012 | train_loss=0.252977 | stop_loss=1.417636 | stop_auc=0.607019 | stop_bal_acc@0.5=0.581639 | stop_acc@0.5=0.578148 | lr=2.250000e-04
+cv_fold3 | seed=123 | epoch=013 | train_loss=0.220418 | stop_loss=1.494560 | stop_auc=0.609711 | stop_bal_acc@0.5=0.569435 | stop_acc@0.5=0.567437 | lr=2.250000e-04
+cv_fold3 | seed=123 | epoch=014 | train_loss=0.208551 | stop_loss=1.529482 | stop_auc=0.607099 | stop_bal_acc@0.5=0.578250 | stop_acc@0.5=0.576006 | lr=2.250000e-04
+cv_fold3 | seed=123 | epoch=015 | train_loss=0.199090 | stop_loss=1.575533 | stop_auc=0.601709 | stop_bal_acc@0.5=0.572022 | stop_acc@0.5=0.570510 | lr=1.125000e-04
+Early stopping for cv_fold3 | seed=123 at epoch 15
+Fold 3 | seed=123 | val_auc=0.592829 | val_bal_acc@0.5=0.570629
+
+--- Training cv_fold3 | seed=999 ---
+Trainable params: 410,241
+cv_fold3 | seed=999 | epoch=001 | train_loss=0.688656 | stop_loss=0.698589 | stop_auc=0.536111 | stop_bal_acc@0.5=0.523994 | stop_acc@0.5=0.514251 | lr=4.500000e-04
+cv_fold3 | seed=999 | epoch=002 | train_loss=0.674799 | stop_loss=0.737141 | stop_auc=0.474184 | stop_bal_acc@0.5=0.490709 | stop_acc@0.5=0.479788 | lr=4.500000e-04
+cv_fold3 | seed=999 | epoch=003 | train_loss=0.641572 | stop_loss=0.848614 | stop_auc=0.491511 | stop_bal_acc@0.5=0.496433 | stop_acc@0.5=0.492921 | lr=4.500000e-04
+cv_fold3 | seed=999 | epoch=004 | train_loss=0.580779 | stop_loss=0.880065 | stop_auc=0.531913 | stop_bal_acc@0.5=0.514939 | stop_acc@0.5=0.512202 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=005 | train_loss=0.506840 | stop_loss=1.039770 | stop_auc=0.546588 | stop_bal_acc@0.5=0.532564 | stop_acc@0.5=0.541915 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=006 | train_loss=0.458909 | stop_loss=1.140708 | stop_auc=0.547009 | stop_bal_acc@0.5=0.532951 | stop_acc@0.5=0.539493 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=007 | train_loss=0.425089 | stop_loss=1.176088 | stop_auc=0.563136 | stop_bal_acc@0.5=0.540994 | stop_acc@0.5=0.545920 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=008 | train_loss=0.392504 | stop_loss=1.266672 | stop_auc=0.564839 | stop_bal_acc@0.5=0.542552 | stop_acc@0.5=0.550671 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=009 | train_loss=0.367810 | stop_loss=1.361054 | stop_auc=0.555928 | stop_bal_acc@0.5=0.524420 | stop_acc@0.5=0.531762 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=010 | train_loss=0.343034 | stop_loss=1.382823 | stop_auc=0.567791 | stop_bal_acc@0.5=0.531741 | stop_acc@0.5=0.537072 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=011 | train_loss=0.325045 | stop_loss=1.492229 | stop_auc=0.565318 | stop_bal_acc@0.5=0.524728 | stop_acc@0.5=0.533811 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=012 | train_loss=0.307048 | stop_loss=1.503237 | stop_auc=0.567891 | stop_bal_acc@0.5=0.536586 | stop_acc@0.5=0.541822 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=013 | train_loss=0.295724 | stop_loss=1.503328 | stop_auc=0.563196 | stop_bal_acc@0.5=0.530181 | stop_acc@0.5=0.537910 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=014 | train_loss=0.274344 | stop_loss=1.629900 | stop_auc=0.547374 | stop_bal_acc@0.5=0.521380 | stop_acc@0.5=0.527757 | lr=2.250000e-04
+cv_fold3 | seed=999 | epoch=015 | train_loss=0.262190 | stop_loss=1.623252 | stop_auc=0.557377 | stop_bal_acc@0.5=0.527495 | stop_acc@0.5=0.533346 | lr=1.125000e-04
+cv_fold3 | seed=999 | epoch=016 | train_loss=0.243851 | stop_loss=1.779340 | stop_auc=0.556832 | stop_bal_acc@0.5=0.520192 | stop_acc@0.5=0.526919 | lr=1.125000e-04
+cv_fold3 | seed=999 | epoch=017 | train_loss=0.236955 | stop_loss=1.691174 | stop_auc=0.558058 | stop_bal_acc@0.5=0.530875 | stop_acc@0.5=0.536326 | lr=1.125000e-04
+cv_fold3 | seed=999 | epoch=018 | train_loss=0.230766 | stop_loss=1.793487 | stop_auc=0.554327 | stop_bal_acc@0.5=0.520404 | stop_acc@0.5=0.527943 | lr=5.625000e-05
+Early stopping for cv_fold3 | seed=999 at epoch 18
+Fold 3 | seed=999 | val_auc=0.554051 | val_bal_acc@0.5=0.539428
+
+--- Training cv_fold3 | seed=5555 ---
+Trainable params: 410,241
+cv_fold3 | seed=5555 | epoch=001 | train_loss=0.688455 | stop_loss=0.690888 | stop_auc=0.549659 | stop_bal_acc@0.5=0.535988 | stop_acc@0.5=0.544430 | lr=4.500000e-04
+cv_fold3 | seed=5555 | epoch=002 | train_loss=0.669495 | stop_loss=0.751175 | stop_auc=0.528026 | stop_bal_acc@0.5=0.519965 | stop_acc@0.5=0.529061 | lr=4.500000e-04
+cv_fold3 | seed=5555 | epoch=003 | train_loss=0.624137 | stop_loss=0.805277 | stop_auc=0.525292 | stop_bal_acc@0.5=0.526939 | stop_acc@0.5=0.536885 | lr=4.500000e-04
+cv_fold3 | seed=5555 | epoch=004 | train_loss=0.562128 | stop_loss=0.929530 | stop_auc=0.546019 | stop_bal_acc@0.5=0.522358 | stop_acc@0.5=0.527012 | lr=2.250000e-04
+cv_fold3 | seed=5555 | epoch=005 | train_loss=0.488253 | stop_loss=1.033110 | stop_auc=0.543488 | stop_bal_acc@0.5=0.533025 | stop_acc@0.5=0.542567 | lr=2.250000e-04
+cv_fold3 | seed=5555 | epoch=006 | train_loss=0.444889 | stop_loss=1.152060 | stop_auc=0.543711 | stop_bal_acc@0.5=0.526139 | stop_acc@0.5=0.530831 | lr=2.250000e-04
+cv_fold3 | seed=5555 | epoch=007 | train_loss=0.409323 | stop_loss=1.201450 | stop_auc=0.555657 | stop_bal_acc@0.5=0.535975 | stop_acc@0.5=0.542008 | lr=2.250000e-04
+cv_fold3 | seed=5555 | epoch=008 | train_loss=0.378612 | stop_loss=1.285834 | stop_auc=0.557687 | stop_bal_acc@0.5=0.542592 | stop_acc@0.5=0.550950 | lr=2.250000e-04
+cv_fold3 | seed=5555 | epoch=009 | train_loss=0.356366 | stop_loss=1.342306 | stop_auc=0.552097 | stop_bal_acc@0.5=0.531370 | stop_acc@0.5=0.538562 | lr=2.250000e-04
+cv_fold3 | seed=5555 | epoch=010 | train_loss=0.337632 | stop_loss=1.394444 | stop_auc=0.552714 | stop_bal_acc@0.5=0.530198 | stop_acc@0.5=0.538189 | lr=2.250000e-04
+cv_fold3 | seed=5555 | epoch=011 | train_loss=0.319904 | stop_loss=1.410683 | stop_auc=0.555301 | stop_bal_acc@0.5=0.533767 | stop_acc@0.5=0.539586 | lr=1.125000e-04
+cv_fold3 | seed=5555 | epoch=012 | train_loss=0.292660 | stop_loss=1.522755 | stop_auc=0.559810 | stop_bal_acc@0.5=0.541379 | stop_acc@0.5=0.549273 | lr=1.125000e-04
+cv_fold3 | seed=5555 | epoch=013 | train_loss=0.284771 | stop_loss=1.523396 | stop_auc=0.559669 | stop_bal_acc@0.5=0.538640 | stop_acc@0.5=0.544616 | lr=1.125000e-04
+cv_fold3 | seed=5555 | epoch=014 | train_loss=0.274732 | stop_loss=1.588725 | stop_auc=0.552865 | stop_bal_acc@0.5=0.531718 | stop_acc@0.5=0.536885 | lr=1.125000e-04
+cv_fold3 | seed=5555 | epoch=015 | train_loss=0.266184 | stop_loss=1.550852 | stop_auc=0.559957 | stop_bal_acc@0.5=0.532953 | stop_acc@0.5=0.539121 | lr=1.125000e-04
+cv_fold3 | seed=5555 | epoch=016 | train_loss=0.257172 | stop_loss=1.631514 | stop_auc=0.559817 | stop_bal_acc@0.5=0.531128 | stop_acc@0.5=0.537630 | lr=1.125000e-04
+cv_fold3 | seed=5555 | epoch=017 | train_loss=0.252519 | stop_loss=1.629995 | stop_auc=0.559521 | stop_bal_acc@0.5=0.536749 | stop_acc@0.5=0.540984 | lr=1.125000e-04
+cv_fold3 | seed=5555 | epoch=018 | train_loss=0.246858 | stop_loss=1.675052 | stop_auc=0.558552 | stop_bal_acc@0.5=0.538090 | stop_acc@0.5=0.544244 | lr=5.625000e-05
+cv_fold3 | seed=5555 | epoch=019 | train_loss=0.234816 | stop_loss=1.706821 | stop_auc=0.555520 | stop_bal_acc@0.5=0.530968 | stop_acc@0.5=0.536699 | lr=5.625000e-05
+cv_fold3 | seed=5555 | epoch=020 | train_loss=0.231659 | stop_loss=1.694132 | stop_auc=0.556487 | stop_bal_acc@0.5=0.530486 | stop_acc@0.5=0.536699 | lr=5.625000e-05
+cv_fold3 | seed=5555 | epoch=021 | train_loss=0.229577 | stop_loss=1.660400 | stop_auc=0.559631 | stop_bal_acc@0.5=0.532432 | stop_acc@0.5=0.538841 | lr=2.812500e-05
+Early stopping for cv_fold3 | seed=5555 at epoch 21
+Fold 3 | seed=5555 | val_auc=0.613087 | val_bal_acc@0.5=0.575479
+
+--- Training cv_fold3 | seed=8080 ---
+Trainable params: 410,241
+cv_fold3 | seed=8080 | epoch=001 | train_loss=0.689419 | stop_loss=0.699621 | stop_auc=0.499702 | stop_bal_acc@0.5=0.513559 | stop_acc@0.5=0.526732 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=002 | train_loss=0.671657 | stop_loss=0.764002 | stop_auc=0.505037 | stop_bal_acc@0.5=0.508737 | stop_acc@0.5=0.513972 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=003 | train_loss=0.624228 | stop_loss=0.860921 | stop_auc=0.514529 | stop_bal_acc@0.5=0.521178 | stop_acc@0.5=0.522914 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=004 | train_loss=0.563222 | stop_loss=0.926067 | stop_auc=0.552307 | stop_bal_acc@0.5=0.536955 | stop_acc@0.5=0.538096 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=005 | train_loss=0.497395 | stop_loss=1.058579 | stop_auc=0.560565 | stop_bal_acc@0.5=0.549428 | stop_acc@0.5=0.549180 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=006 | train_loss=0.438868 | stop_loss=1.203684 | stop_auc=0.570042 | stop_bal_acc@0.5=0.548668 | stop_acc@0.5=0.547038 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=007 | train_loss=0.386135 | stop_loss=1.221454 | stop_auc=0.577024 | stop_bal_acc@0.5=0.558397 | stop_acc@0.5=0.559799 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=008 | train_loss=0.349825 | stop_loss=1.328107 | stop_auc=0.577595 | stop_bal_acc@0.5=0.559169 | stop_acc@0.5=0.564549 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=009 | train_loss=0.314908 | stop_loss=1.531768 | stop_auc=0.571745 | stop_bal_acc@0.5=0.556141 | stop_acc@0.5=0.560171 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=010 | train_loss=0.289874 | stop_loss=1.519188 | stop_auc=0.569211 | stop_bal_acc@0.5=0.555197 | stop_acc@0.5=0.554676 | lr=4.500000e-04
+cv_fold3 | seed=8080 | epoch=011 | train_loss=0.269150 | stop_loss=1.561309 | stop_auc=0.576817 | stop_bal_acc@0.5=0.553690 | stop_acc@0.5=0.558215 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=012 | train_loss=0.236041 | stop_loss=1.523921 | stop_auc=0.583777 | stop_bal_acc@0.5=0.560440 | stop_acc@0.5=0.563804 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=013 | train_loss=0.222960 | stop_loss=1.643191 | stop_auc=0.578132 | stop_bal_acc@0.5=0.549348 | stop_acc@0.5=0.553838 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=014 | train_loss=0.210859 | stop_loss=1.606240 | stop_auc=0.597516 | stop_bal_acc@0.5=0.565108 | stop_acc@0.5=0.567530 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=015 | train_loss=0.204767 | stop_loss=1.573132 | stop_auc=0.592061 | stop_bal_acc@0.5=0.566372 | stop_acc@0.5=0.569858 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=016 | train_loss=0.197829 | stop_loss=1.651805 | stop_auc=0.596150 | stop_bal_acc@0.5=0.561323 | stop_acc@0.5=0.565853 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=017 | train_loss=0.191869 | stop_loss=1.604135 | stop_auc=0.607108 | stop_bal_acc@0.5=0.567297 | stop_acc@0.5=0.573025 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=018 | train_loss=0.186380 | stop_loss=1.642069 | stop_auc=0.599954 | stop_bal_acc@0.5=0.571874 | stop_acc@0.5=0.574795 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=019 | train_loss=0.182722 | stop_loss=1.683794 | stop_auc=0.581470 | stop_bal_acc@0.5=0.562965 | stop_acc@0.5=0.563804 | lr=2.250000e-04
+cv_fold3 | seed=8080 | epoch=020 | train_loss=0.176112 | stop_loss=1.661466 | stop_auc=0.604289 | stop_bal_acc@0.5=0.573521 | stop_acc@0.5=0.575447 | lr=1.125000e-04
+cv_fold3 | seed=8080 | epoch=021 | train_loss=0.165458 | stop_loss=1.640437 | stop_auc=0.608706 | stop_bal_acc@0.5=0.581787 | stop_acc@0.5=0.584482 | lr=1.125000e-04
+cv_fold3 | seed=8080 | epoch=022 | train_loss=0.161010 | stop_loss=1.651977 | stop_auc=0.610606 | stop_bal_acc@0.5=0.581914 | stop_acc@0.5=0.583644 | lr=1.125000e-04
+cv_fold3 | seed=8080 | epoch=023 | train_loss=0.156805 | stop_loss=1.704805 | stop_auc=0.603832 | stop_bal_acc@0.5=0.575947 | stop_acc@0.5=0.576379 | lr=1.125000e-04
+cv_fold3 | seed=8080 | epoch=024 | train_loss=0.154565 | stop_loss=1.704726 | stop_auc=0.606881 | stop_bal_acc@0.5=0.577269 | stop_acc@0.5=0.580104 | lr=1.125000e-04
+cv_fold3 | seed=8080 | epoch=025 | train_loss=0.153881 | stop_loss=1.668080 | stop_auc=0.612869 | stop_bal_acc@0.5=0.581494 | stop_acc@0.5=0.584296 | lr=1.125000e-04
+cv_fold3 | seed=8080 | epoch=026 | train_loss=0.152231 | stop_loss=1.723892 | stop_auc=0.607405 | stop_bal_acc@0.5=0.576996 | stop_acc@0.5=0.580663 | lr=1.125000e-04
+cv_fold3 | seed=8080 | epoch=027 | train_loss=0.151924 | stop_loss=1.765077 | stop_auc=0.604355 | stop_bal_acc@0.5=0.576277 | stop_acc@0.5=0.580011 | lr=1.125000e-04
+cv_fold3 | seed=8080 | epoch=028 | train_loss=0.147832 | stop_loss=1.754910 | stop_auc=0.604068 | stop_bal_acc@0.5=0.575257 | stop_acc@0.5=0.577031 | lr=5.625000e-05
+cv_fold3 | seed=8080 | epoch=029 | train_loss=0.143231 | stop_loss=1.745349 | stop_auc=0.605461 | stop_bal_acc@0.5=0.571845 | stop_acc@0.5=0.573305 | lr=5.625000e-05
+cv_fold3 | seed=8080 | epoch=030 | train_loss=0.141437 | stop_loss=1.745634 | stop_auc=0.606548 | stop_bal_acc@0.5=0.580022 | stop_acc@0.5=0.581408 | lr=5.625000e-05
+cv_fold3 | seed=8080 | epoch=031 | train_loss=0.140074 | stop_loss=1.797603 | stop_auc=0.601887 | stop_bal_acc@0.5=0.573024 | stop_acc@0.5=0.574981 | lr=2.812500e-05
+Early stopping for cv_fold3 | seed=8080 at epoch 31
+Fold 3 | seed=8080 | val_auc=0.572507 | val_bal_acc@0.5=0.552956
+
+--- Training cv_fold3 | seed=2718 ---
+Trainable params: 410,241
+cv_fold3 | seed=2718 | epoch=001 | train_loss=0.689106 | stop_loss=0.703916 | stop_auc=0.512392 | stop_bal_acc@0.5=0.496887 | stop_acc@0.5=0.514717 | lr=4.500000e-04
+cv_fold3 | seed=2718 | epoch=002 | train_loss=0.673039 | stop_loss=0.751110 | stop_auc=0.512143 | stop_bal_acc@0.5=0.508256 | stop_acc@0.5=0.520585 | lr=4.500000e-04
+cv_fold3 | seed=2718 | epoch=003 | train_loss=0.638874 | stop_loss=0.804660 | stop_auc=0.537194 | stop_bal_acc@0.5=0.530011 | stop_acc@0.5=0.535209 | lr=4.500000e-04
+cv_fold3 | seed=2718 | epoch=004 | train_loss=0.591702 | stop_loss=0.855945 | stop_auc=0.534051 | stop_bal_acc@0.5=0.516193 | stop_acc@0.5=0.515369 | lr=4.500000e-04
+cv_fold3 | seed=2718 | epoch=005 | train_loss=0.533375 | stop_loss=0.984802 | stop_auc=0.528602 | stop_bal_acc@0.5=0.512976 | stop_acc@0.5=0.515369 | lr=4.500000e-04
+cv_fold3 | seed=2718 | epoch=006 | train_loss=0.472349 | stop_loss=1.147407 | stop_auc=0.534723 | stop_bal_acc@0.5=0.522143 | stop_acc@0.5=0.521144 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=007 | train_loss=0.409492 | stop_loss=1.303743 | stop_auc=0.545574 | stop_bal_acc@0.5=0.531891 | stop_acc@0.5=0.533811 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=008 | train_loss=0.378264 | stop_loss=1.374873 | stop_auc=0.544768 | stop_bal_acc@0.5=0.528865 | stop_acc@0.5=0.527664 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=009 | train_loss=0.350349 | stop_loss=1.392344 | stop_auc=0.549465 | stop_bal_acc@0.5=0.529647 | stop_acc@0.5=0.531390 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=010 | train_loss=0.330033 | stop_loss=1.537763 | stop_auc=0.544608 | stop_bal_acc@0.5=0.524404 | stop_acc@0.5=0.522448 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=011 | train_loss=0.309367 | stop_loss=1.470283 | stop_auc=0.549717 | stop_bal_acc@0.5=0.529980 | stop_acc@0.5=0.533066 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=012 | train_loss=0.292272 | stop_loss=1.504662 | stop_auc=0.557699 | stop_bal_acc@0.5=0.533600 | stop_acc@0.5=0.532321 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=013 | train_loss=0.277885 | stop_loss=1.647075 | stop_auc=0.559077 | stop_bal_acc@0.5=0.534383 | stop_acc@0.5=0.538282 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=014 | train_loss=0.267388 | stop_loss=1.659901 | stop_auc=0.555793 | stop_bal_acc@0.5=0.528138 | stop_acc@0.5=0.531483 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=015 | train_loss=0.258155 | stop_loss=1.577372 | stop_auc=0.568635 | stop_bal_acc@0.5=0.541061 | stop_acc@0.5=0.544244 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=016 | train_loss=0.244953 | stop_loss=1.673040 | stop_auc=0.557875 | stop_bal_acc@0.5=0.539397 | stop_acc@0.5=0.540890 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=017 | train_loss=0.236329 | stop_loss=1.734555 | stop_auc=0.557198 | stop_bal_acc@0.5=0.531767 | stop_acc@0.5=0.535115 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=018 | train_loss=0.225277 | stop_loss=1.662854 | stop_auc=0.573163 | stop_bal_acc@0.5=0.556870 | stop_acc@0.5=0.556166 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=019 | train_loss=0.218874 | stop_loss=1.728617 | stop_auc=0.564406 | stop_bal_acc@0.5=0.546914 | stop_acc@0.5=0.548156 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=020 | train_loss=0.209593 | stop_loss=1.700707 | stop_auc=0.578456 | stop_bal_acc@0.5=0.556300 | stop_acc@0.5=0.557656 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=021 | train_loss=0.203110 | stop_loss=1.768935 | stop_auc=0.565304 | stop_bal_acc@0.5=0.542904 | stop_acc@0.5=0.545641 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=022 | train_loss=0.199875 | stop_loss=1.739439 | stop_auc=0.560348 | stop_bal_acc@0.5=0.550019 | stop_acc@0.5=0.549646 | lr=2.250000e-04
+cv_fold3 | seed=2718 | epoch=023 | train_loss=0.195490 | stop_loss=1.853358 | stop_auc=0.553858 | stop_bal_acc@0.5=0.537630 | stop_acc@0.5=0.540797 | lr=1.125000e-04
+cv_fold3 | seed=2718 | epoch=024 | train_loss=0.177752 | stop_loss=1.811504 | stop_auc=0.569044 | stop_bal_acc@0.5=0.552734 | stop_acc@0.5=0.555514 | lr=1.125000e-04
+cv_fold3 | seed=2718 | epoch=025 | train_loss=0.172034 | stop_loss=1.825404 | stop_auc=0.564921 | stop_bal_acc@0.5=0.546090 | stop_acc@0.5=0.548528 | lr=1.125000e-04
+cv_fold3 | seed=2718 | epoch=026 | train_loss=0.169501 | stop_loss=1.831338 | stop_auc=0.563696 | stop_bal_acc@0.5=0.540428 | stop_acc@0.5=0.545268 | lr=5.625000e-05
+Early stopping for cv_fold3 | seed=2718 at epoch 26
+Fold 3 | seed=2718 | val_auc=0.577426 | val_bal_acc@0.5=0.549023
+
+====================================================================================================
+7. OOF SEED SELECTION
+====================================================================================================
+ seed  oof_auc  oof_bal_acc_0.5  covered_samples
+ 5555 0.561999         0.535857            71598
+ 2026 0.561470         0.543359            71598
+ 2718 0.555860         0.540722            71598
+  123 0.555352         0.544549            71598
+ 8080 0.551491         0.526289            71598
+ 1337 0.547375         0.533473            71598
+  999 0.546642         0.533370            71598
+31415 0.545373         0.532592            71598
+   42 0.541170         0.521487            71598
+  777 0.539617         0.530806            71598
+
+Stable seeds selected: [5555, 2026, 2718, 123, 8080, 1337, 999, 31415, 42, 777]
+Best threshold from OOF validation: 0.4350
+
+Top threshold candidates:
+ threshold  accuracy  balanced_accuracy       f1  positive_rate
+    0.4350  0.550337           0.546590 0.595586       0.590799
+    0.4175  0.551314           0.546480 0.605610       0.616581
+    0.4325  0.550365           0.546458 0.596978       0.594570
+    0.4300  0.550448           0.546390 0.598350       0.598173
+    0.4250  0.550700           0.546329 0.601212       0.605576
+    0.4200  0.551007           0.546316 0.604155       0.613174
+    0.4150  0.551258           0.546284 0.606701       0.619878
+    0.4375  0.549820           0.546233 0.593728       0.586986
+    0.4225  0.550728           0.546195 0.602587       0.609402
+    0.4125  0.551133           0.546002 0.607863       0.623579
+    0.4275  0.550211           0.545999 0.599433       0.601791
+    0.4425  0.549275           0.545983 0.590651       0.579988
+    0.4400  0.549373           0.545933 0.592039       0.583494
+    0.4025  0.551677           0.545906 0.613465       0.638761
+    0.4050  0.551510           0.545891 0.612116       0.635157
+    0.4100  0.551077           0.545795 0.609035       0.627154
+    0.4075  0.551203           0.545748 0.610533       0.631247
+    0.4475  0.548702           0.545722 0.587362       0.572600
+    0.4450  0.548814           0.545671 0.588913       0.576455
+    0.4000  0.551566           0.545649 0.614511       0.642197
+
+====================================================================================================
+8. FINAL TRAINING ON TRAINVAL
+====================================================================================================
+
+--- Training final | seed=5555 ---
+Trainable params: 410,241
+final | seed=5555 | epoch=001 | train_loss=0.689359 | stop_loss=0.692983 | stop_auc=0.534528 | stop_bal_acc@0.5=0.531271 | stop_acc@0.5=0.539214 | lr=4.500000e-04
+final | seed=5555 | epoch=002 | train_loss=0.670136 | stop_loss=0.715744 | stop_auc=0.563253 | stop_bal_acc@0.5=0.529555 | stop_acc@0.5=0.532439 | lr=4.500000e-04
+final | seed=5555 | epoch=003 | train_loss=0.622576 | stop_loss=0.726509 | stop_auc=0.582411 | stop_bal_acc@0.5=0.548471 | stop_acc@0.5=0.549969 | lr=4.500000e-04
+final | seed=5555 | epoch=004 | train_loss=0.560510 | stop_loss=0.858488 | stop_auc=0.575833 | stop_bal_acc@0.5=0.546215 | stop_acc@0.5=0.548153 | lr=4.500000e-04
+final | seed=5555 | epoch=005 | train_loss=0.490241 | stop_loss=0.954584 | stop_auc=0.604165 | stop_bal_acc@0.5=0.575838 | stop_acc@0.5=0.573993 | lr=4.500000e-04
+final | seed=5555 | epoch=006 | train_loss=0.432344 | stop_loss=1.073673 | stop_auc=0.624549 | stop_bal_acc@0.5=0.588223 | stop_acc@0.5=0.586214 | lr=4.500000e-04
+final | seed=5555 | epoch=007 | train_loss=0.385279 | stop_loss=1.191623 | stop_auc=0.615036 | stop_bal_acc@0.5=0.580796 | stop_acc@0.5=0.580278 | lr=4.500000e-04
+final | seed=5555 | epoch=008 | train_loss=0.349314 | stop_loss=1.123790 | stop_auc=0.659701 | stop_bal_acc@0.5=0.609655 | stop_acc@0.5=0.609610 | lr=4.500000e-04
+final | seed=5555 | epoch=009 | train_loss=0.314924 | stop_loss=1.168877 | stop_auc=0.658739 | stop_bal_acc@0.5=0.614936 | stop_acc@0.5=0.614149 | lr=4.500000e-04
+final | seed=5555 | epoch=010 | train_loss=0.293665 | stop_loss=1.254343 | stop_auc=0.654513 | stop_bal_acc@0.5=0.611312 | stop_acc@0.5=0.609889 | lr=4.500000e-04
+final | seed=5555 | epoch=011 | train_loss=0.268449 | stop_loss=1.277885 | stop_auc=0.651572 | stop_bal_acc@0.5=0.604015 | stop_acc@0.5=0.604232 | lr=2.250000e-04
+final | seed=5555 | epoch=012 | train_loss=0.233808 | stop_loss=1.340365 | stop_auc=0.660924 | stop_bal_acc@0.5=0.622412 | stop_acc@0.5=0.622879 | lr=2.250000e-04
+final | seed=5555 | epoch=013 | train_loss=0.223613 | stop_loss=1.406230 | stop_auc=0.660173 | stop_bal_acc@0.5=0.618369 | stop_acc@0.5=0.618828 | lr=2.250000e-04
+final | seed=5555 | epoch=014 | train_loss=0.212190 | stop_loss=1.380877 | stop_auc=0.658915 | stop_bal_acc@0.5=0.611348 | stop_acc@0.5=0.612333 | lr=2.250000e-04
+final | seed=5555 | epoch=015 | train_loss=0.202408 | stop_loss=1.408373 | stop_auc=0.661169 | stop_bal_acc@0.5=0.613900 | stop_acc@0.5=0.613381 | lr=2.250000e-04
+final | seed=5555 | epoch=016 | train_loss=0.195575 | stop_loss=1.447253 | stop_auc=0.659471 | stop_bal_acc@0.5=0.606243 | stop_acc@0.5=0.604791 | lr=2.250000e-04
+final | seed=5555 | epoch=017 | train_loss=0.191451 | stop_loss=1.381191 | stop_auc=0.666395 | stop_bal_acc@0.5=0.622853 | stop_acc@0.5=0.621272 | lr=2.250000e-04
+final | seed=5555 | epoch=018 | train_loss=0.184915 | stop_loss=1.502350 | stop_auc=0.657061 | stop_bal_acc@0.5=0.609926 | stop_acc@0.5=0.608073 | lr=2.250000e-04
+final | seed=5555 | epoch=019 | train_loss=0.181502 | stop_loss=1.477510 | stop_auc=0.656744 | stop_bal_acc@0.5=0.614190 | stop_acc@0.5=0.611565 | lr=2.250000e-04
+final | seed=5555 | epoch=020 | train_loss=0.179870 | stop_loss=1.404479 | stop_auc=0.675672 | stop_bal_acc@0.5=0.619808 | stop_acc@0.5=0.618688 | lr=2.250000e-04
+final | seed=5555 | epoch=021 | train_loss=0.169661 | stop_loss=1.499800 | stop_auc=0.666083 | stop_bal_acc@0.5=0.620064 | stop_acc@0.5=0.618269 | lr=2.250000e-04
+final | seed=5555 | epoch=022 | train_loss=0.167807 | stop_loss=1.461634 | stop_auc=0.660142 | stop_bal_acc@0.5=0.601384 | stop_acc@0.5=0.604372 | lr=2.250000e-04
+final | seed=5555 | epoch=023 | train_loss=0.164645 | stop_loss=1.514496 | stop_auc=0.660552 | stop_bal_acc@0.5=0.614003 | stop_acc@0.5=0.612682 | lr=1.125000e-04
+final | seed=5555 | epoch=024 | train_loss=0.150804 | stop_loss=1.559630 | stop_auc=0.659672 | stop_bal_acc@0.5=0.612855 | stop_acc@0.5=0.612822 | lr=1.125000e-04
+final | seed=5555 | epoch=025 | train_loss=0.148893 | stop_loss=1.501040 | stop_auc=0.663447 | stop_bal_acc@0.5=0.615762 | stop_acc@0.5=0.613940 | lr=1.125000e-04
+final | seed=5555 | epoch=026 | train_loss=0.146611 | stop_loss=1.521852 | stop_auc=0.662423 | stop_bal_acc@0.5=0.612779 | stop_acc@0.5=0.614638 | lr=5.625000e-05
+Early stopping for final | seed=5555 at epoch 26
+Final seed=5555 | best_epoch=20 | best_stop_auc=0.675672 | best_stop_bal_acc=0.619808
+
+--- Training final | seed=2026 ---
+Trainable params: 410,241
+final | seed=2026 | epoch=001 | train_loss=0.691139 | stop_loss=0.689459 | stop_auc=0.539913 | stop_bal_acc@0.5=0.539968 | stop_acc@0.5=0.547315 | lr=4.500000e-04
+final | seed=2026 | epoch=002 | train_loss=0.679681 | stop_loss=0.705211 | stop_auc=0.558559 | stop_bal_acc@0.5=0.517474 | stop_acc@0.5=0.526294 | lr=4.500000e-04
+final | seed=2026 | epoch=003 | train_loss=0.630319 | stop_loss=0.791933 | stop_auc=0.569804 | stop_bal_acc@0.5=0.551032 | stop_acc@0.5=0.550667 | lr=4.500000e-04
+final | seed=2026 | epoch=004 | train_loss=0.554548 | stop_loss=0.821099 | stop_auc=0.601700 | stop_bal_acc@0.5=0.561323 | stop_acc@0.5=0.564844 | lr=4.500000e-04
+final | seed=2026 | epoch=005 | train_loss=0.478671 | stop_loss=0.920515 | stop_auc=0.611190 | stop_bal_acc@0.5=0.558251 | stop_acc@0.5=0.564984 | lr=4.500000e-04
+final | seed=2026 | epoch=006 | train_loss=0.417230 | stop_loss=1.119487 | stop_auc=0.617002 | stop_bal_acc@0.5=0.586778 | stop_acc@0.5=0.585376 | lr=4.500000e-04
+final | seed=2026 | epoch=007 | train_loss=0.368346 | stop_loss=1.142945 | stop_auc=0.635781 | stop_bal_acc@0.5=0.592209 | stop_acc@0.5=0.591731 | lr=4.500000e-04
+final | seed=2026 | epoch=008 | train_loss=0.329207 | stop_loss=1.299994 | stop_auc=0.622278 | stop_bal_acc@0.5=0.579634 | stop_acc@0.5=0.581814 | lr=4.500000e-04
+final | seed=2026 | epoch=009 | train_loss=0.299867 | stop_loss=1.314976 | stop_auc=0.638049 | stop_bal_acc@0.5=0.592622 | stop_acc@0.5=0.592499 | lr=4.500000e-04
+final | seed=2026 | epoch=010 | train_loss=0.278131 | stop_loss=1.368438 | stop_auc=0.642739 | stop_bal_acc@0.5=0.604553 | stop_acc@0.5=0.598785 | lr=4.500000e-04
+final | seed=2026 | epoch=011 | train_loss=0.254618 | stop_loss=1.446139 | stop_auc=0.632526 | stop_bal_acc@0.5=0.606193 | stop_acc@0.5=0.607375 | lr=4.500000e-04
+final | seed=2026 | epoch=012 | train_loss=0.236411 | stop_loss=1.390946 | stop_auc=0.641860 | stop_bal_acc@0.5=0.609162 | stop_acc@0.5=0.611495 | lr=4.500000e-04
+final | seed=2026 | epoch=013 | train_loss=0.225290 | stop_loss=1.426553 | stop_auc=0.647967 | stop_bal_acc@0.5=0.614333 | stop_acc@0.5=0.617571 | lr=4.500000e-04
+final | seed=2026 | epoch=014 | train_loss=0.211526 | stop_loss=1.514431 | stop_auc=0.653404 | stop_bal_acc@0.5=0.616974 | stop_acc@0.5=0.617292 | lr=4.500000e-04
+final | seed=2026 | epoch=015 | train_loss=0.202475 | stop_loss=1.449615 | stop_auc=0.651783 | stop_bal_acc@0.5=0.618524 | stop_acc@0.5=0.619596 | lr=4.500000e-04
+final | seed=2026 | epoch=016 | train_loss=0.192370 | stop_loss=1.461386 | stop_auc=0.650425 | stop_bal_acc@0.5=0.613262 | stop_acc@0.5=0.610867 | lr=4.500000e-04
+final | seed=2026 | epoch=017 | train_loss=0.184740 | stop_loss=1.485644 | stop_auc=0.643260 | stop_bal_acc@0.5=0.609029 | stop_acc@0.5=0.609121 | lr=2.250000e-04
+final | seed=2026 | epoch=018 | train_loss=0.161206 | stop_loss=1.568394 | stop_auc=0.648440 | stop_bal_acc@0.5=0.612925 | stop_acc@0.5=0.611984 | lr=2.250000e-04
+final | seed=2026 | epoch=019 | train_loss=0.158127 | stop_loss=1.519426 | stop_auc=0.648190 | stop_bal_acc@0.5=0.615322 | stop_acc@0.5=0.614009 | lr=2.250000e-04
+final | seed=2026 | epoch=020 | train_loss=0.153081 | stop_loss=1.528240 | stop_auc=0.655307 | stop_bal_acc@0.5=0.622055 | stop_acc@0.5=0.622530 | lr=2.250000e-04
+final | seed=2026 | epoch=021 | train_loss=0.150510 | stop_loss=1.561224 | stop_auc=0.649660 | stop_bal_acc@0.5=0.616041 | stop_acc@0.5=0.617431 | lr=2.250000e-04
+final | seed=2026 | epoch=022 | train_loss=0.146738 | stop_loss=1.564702 | stop_auc=0.652044 | stop_bal_acc@0.5=0.612758 | stop_acc@0.5=0.611076 | lr=2.250000e-04
+final | seed=2026 | epoch=023 | train_loss=0.144887 | stop_loss=1.604483 | stop_auc=0.649787 | stop_bal_acc@0.5=0.617139 | stop_acc@0.5=0.616104 | lr=1.125000e-04
+final | seed=2026 | epoch=024 | train_loss=0.132140 | stop_loss=1.624785 | stop_auc=0.652379 | stop_bal_acc@0.5=0.615295 | stop_acc@0.5=0.614847 | lr=1.125000e-04
+final | seed=2026 | epoch=025 | train_loss=0.132751 | stop_loss=1.564997 | stop_auc=0.655666 | stop_bal_acc@0.5=0.621045 | stop_acc@0.5=0.620644 | lr=1.125000e-04
+final | seed=2026 | epoch=026 | train_loss=0.129599 | stop_loss=1.620898 | stop_auc=0.649449 | stop_bal_acc@0.5=0.615349 | stop_acc@0.5=0.614917 | lr=1.125000e-04
+final | seed=2026 | epoch=027 | train_loss=0.128136 | stop_loss=1.629664 | stop_auc=0.649254 | stop_bal_acc@0.5=0.615415 | stop_acc@0.5=0.617082 | lr=1.125000e-04
+final | seed=2026 | epoch=028 | train_loss=0.126946 | stop_loss=1.628843 | stop_auc=0.647207 | stop_bal_acc@0.5=0.615342 | stop_acc@0.5=0.613800 | lr=5.625000e-05
+final | seed=2026 | epoch=029 | train_loss=0.122645 | stop_loss=1.644016 | stop_auc=0.646969 | stop_bal_acc@0.5=0.615797 | stop_acc@0.5=0.616244 | lr=5.625000e-05
+final | seed=2026 | epoch=030 | train_loss=0.120587 | stop_loss=1.647688 | stop_auc=0.649958 | stop_bal_acc@0.5=0.620949 | stop_acc@0.5=0.619038 | lr=5.625000e-05
+final | seed=2026 | epoch=031 | train_loss=0.120258 | stop_loss=1.646828 | stop_auc=0.647156 | stop_bal_acc@0.5=0.614038 | stop_acc@0.5=0.611286 | lr=2.812500e-05
+Early stopping for final | seed=2026 at epoch 31
+Final seed=2026 | best_epoch=25 | best_stop_auc=0.655666 | best_stop_bal_acc=0.621045
+
+--- Training final | seed=2718 ---
+Trainable params: 410,241
+final | seed=2718 | epoch=001 | train_loss=0.690394 | stop_loss=0.692747 | stop_auc=0.546166 | stop_bal_acc@0.5=0.531565 | stop_acc@0.5=0.549061 | lr=4.500000e-04
+final | seed=2718 | epoch=002 | train_loss=0.677576 | stop_loss=0.712859 | stop_auc=0.550503 | stop_bal_acc@0.5=0.526219 | stop_acc@0.5=0.538795 | lr=4.500000e-04
+final | seed=2718 | epoch=003 | train_loss=0.642039 | stop_loss=0.819181 | stop_auc=0.543133 | stop_bal_acc@0.5=0.525634 | stop_acc@0.5=0.527062 | lr=4.500000e-04
+final | seed=2718 | epoch=004 | train_loss=0.593381 | stop_loss=0.879825 | stop_auc=0.526021 | stop_bal_acc@0.5=0.512729 | stop_acc@0.5=0.517843 | lr=4.500000e-04
+final | seed=2718 | epoch=005 | train_loss=0.531668 | stop_loss=0.967025 | stop_auc=0.555125 | stop_bal_acc@0.5=0.533964 | stop_acc@0.5=0.531392 | lr=4.500000e-04
+final | seed=2718 | epoch=006 | train_loss=0.461624 | stop_loss=1.118382 | stop_auc=0.571746 | stop_bal_acc@0.5=0.551001 | stop_acc@0.5=0.545359 | lr=4.500000e-04
+final | seed=2718 | epoch=007 | train_loss=0.409927 | stop_loss=1.224849 | stop_auc=0.586085 | stop_bal_acc@0.5=0.544218 | stop_acc@0.5=0.539353 | lr=4.500000e-04
+final | seed=2718 | epoch=008 | train_loss=0.360050 | stop_loss=1.332452 | stop_auc=0.600457 | stop_bal_acc@0.5=0.566662 | stop_acc@0.5=0.559397 | lr=4.500000e-04
+final | seed=2718 | epoch=009 | train_loss=0.324726 | stop_loss=1.471067 | stop_auc=0.595304 | stop_bal_acc@0.5=0.565202 | stop_acc@0.5=0.557651 | lr=4.500000e-04
+final | seed=2718 | epoch=010 | train_loss=0.303121 | stop_loss=1.405580 | stop_auc=0.619040 | stop_bal_acc@0.5=0.573851 | stop_acc@0.5=0.566869 | lr=4.500000e-04
+final | seed=2718 | epoch=011 | train_loss=0.277970 | stop_loss=1.483915 | stop_auc=0.600418 | stop_bal_acc@0.5=0.575417 | stop_acc@0.5=0.570082 | lr=4.500000e-04
+final | seed=2718 | epoch=012 | train_loss=0.259238 | stop_loss=1.519105 | stop_auc=0.604983 | stop_bal_acc@0.5=0.569463 | stop_acc@0.5=0.566031 | lr=4.500000e-04
+final | seed=2718 | epoch=013 | train_loss=0.241969 | stop_loss=1.442669 | stop_auc=0.633047 | stop_bal_acc@0.5=0.584510 | stop_acc@0.5=0.579649 | lr=4.500000e-04
+final | seed=2718 | epoch=014 | train_loss=0.227553 | stop_loss=1.509075 | stop_auc=0.631456 | stop_bal_acc@0.5=0.585893 | stop_acc@0.5=0.581046 | lr=4.500000e-04
+final | seed=2718 | epoch=015 | train_loss=0.217796 | stop_loss=1.679913 | stop_auc=0.612697 | stop_bal_acc@0.5=0.563504 | stop_acc@0.5=0.559397 | lr=4.500000e-04
+final | seed=2718 | epoch=016 | train_loss=0.206346 | stop_loss=1.554814 | stop_auc=0.631706 | stop_bal_acc@0.5=0.580469 | stop_acc@0.5=0.575948 | lr=2.250000e-04
+final | seed=2718 | epoch=017 | train_loss=0.181449 | stop_loss=1.534616 | stop_auc=0.641189 | stop_bal_acc@0.5=0.597252 | stop_acc@0.5=0.595991 | lr=2.250000e-04
+final | seed=2718 | epoch=018 | train_loss=0.173900 | stop_loss=1.613656 | stop_auc=0.638689 | stop_bal_acc@0.5=0.594026 | stop_acc@0.5=0.590195 | lr=2.250000e-04
+final | seed=2718 | epoch=019 | train_loss=0.167975 | stop_loss=1.698452 | stop_auc=0.627053 | stop_bal_acc@0.5=0.576882 | stop_acc@0.5=0.570710 | lr=2.250000e-04
+final | seed=2718 | epoch=020 | train_loss=0.165623 | stop_loss=1.562516 | stop_auc=0.639851 | stop_bal_acc@0.5=0.591807 | stop_acc@0.5=0.587262 | lr=1.125000e-04
+final | seed=2718 | epoch=021 | train_loss=0.151866 | stop_loss=1.668507 | stop_auc=0.635440 | stop_bal_acc@0.5=0.583805 | stop_acc@0.5=0.580418 | lr=1.125000e-04
+final | seed=2718 | epoch=022 | train_loss=0.147910 | stop_loss=1.700332 | stop_auc=0.635596 | stop_bal_acc@0.5=0.587238 | stop_acc@0.5=0.581395 | lr=1.125000e-04
+final | seed=2718 | epoch=023 | train_loss=0.146057 | stop_loss=1.725763 | stop_auc=0.635997 | stop_bal_acc@0.5=0.587873 | stop_acc@0.5=0.581535 | lr=5.625000e-05
+Early stopping for final | seed=2718 at epoch 23
+Final seed=2718 | best_epoch=17 | best_stop_auc=0.641189 | best_stop_bal_acc=0.597252
+
+--- Training final | seed=123 ---
+Trainable params: 410,241
+final | seed=123 | epoch=001 | train_loss=0.690380 | stop_loss=0.691601 | stop_auc=0.538593 | stop_bal_acc@0.5=0.536804 | stop_acc@0.5=0.548292 | lr=4.500000e-04
+final | seed=123 | epoch=002 | train_loss=0.680721 | stop_loss=0.696365 | stop_auc=0.560028 | stop_bal_acc@0.5=0.520529 | stop_acc@0.5=0.543264 | lr=4.500000e-04
+final | seed=123 | epoch=003 | train_loss=0.637081 | stop_loss=0.745082 | stop_auc=0.587096 | stop_bal_acc@0.5=0.566158 | stop_acc@0.5=0.574062 | lr=4.500000e-04
+final | seed=123 | epoch=004 | train_loss=0.560058 | stop_loss=0.918139 | stop_auc=0.594696 | stop_bal_acc@0.5=0.564247 | stop_acc@0.5=0.565123 | lr=4.500000e-04
+final | seed=123 | epoch=005 | train_loss=0.489208 | stop_loss=1.016482 | stop_auc=0.631355 | stop_bal_acc@0.5=0.601919 | stop_acc@0.5=0.602207 | lr=4.500000e-04
+final | seed=123 | epoch=006 | train_loss=0.426018 | stop_loss=1.111522 | stop_auc=0.635614 | stop_bal_acc@0.5=0.594003 | stop_acc@0.5=0.588030 | lr=4.500000e-04
+final | seed=123 | epoch=007 | train_loss=0.375779 | stop_loss=1.204801 | stop_auc=0.645780 | stop_bal_acc@0.5=0.607109 | stop_acc@0.5=0.609540 | lr=4.500000e-04
+final | seed=123 | epoch=008 | train_loss=0.342891 | stop_loss=1.300827 | stop_auc=0.639300 | stop_bal_acc@0.5=0.608950 | stop_acc@0.5=0.602905 | lr=4.500000e-04
+final | seed=123 | epoch=009 | train_loss=0.307861 | stop_loss=1.272030 | stop_auc=0.654420 | stop_bal_acc@0.5=0.611446 | stop_acc@0.5=0.607165 | lr=4.500000e-04
+final | seed=123 | epoch=010 | train_loss=0.285185 | stop_loss=1.363983 | stop_auc=0.642493 | stop_bal_acc@0.5=0.607548 | stop_acc@0.5=0.603953 | lr=4.500000e-04
+final | seed=123 | epoch=011 | train_loss=0.260421 | stop_loss=1.541978 | stop_auc=0.641284 | stop_bal_acc@0.5=0.611944 | stop_acc@0.5=0.606048 | lr=4.500000e-04
+final | seed=123 | epoch=012 | train_loss=0.246070 | stop_loss=1.470110 | stop_auc=0.635588 | stop_bal_acc@0.5=0.610342 | stop_acc@0.5=0.605769 | lr=2.250000e-04
+final | seed=123 | epoch=013 | train_loss=0.210831 | stop_loss=1.524351 | stop_auc=0.650396 | stop_bal_acc@0.5=0.618045 | stop_acc@0.5=0.613032 | lr=2.250000e-04
+final | seed=123 | epoch=014 | train_loss=0.201310 | stop_loss=1.516812 | stop_auc=0.657465 | stop_bal_acc@0.5=0.621824 | stop_acc@0.5=0.616104 | lr=2.250000e-04
+final | seed=123 | epoch=015 | train_loss=0.193109 | stop_loss=1.525967 | stop_auc=0.655899 | stop_bal_acc@0.5=0.627723 | stop_acc@0.5=0.627209 | lr=2.250000e-04
+final | seed=123 | epoch=016 | train_loss=0.185084 | stop_loss=1.486818 | stop_auc=0.663738 | stop_bal_acc@0.5=0.629682 | stop_acc@0.5=0.624066 | lr=2.250000e-04
+final | seed=123 | epoch=017 | train_loss=0.184736 | stop_loss=1.428251 | stop_auc=0.665337 | stop_bal_acc@0.5=0.640348 | stop_acc@0.5=0.638243 | lr=2.250000e-04
+final | seed=123 | epoch=018 | train_loss=0.178384 | stop_loss=1.449700 | stop_auc=0.675021 | stop_bal_acc@0.5=0.636532 | stop_acc@0.5=0.632377 | lr=2.250000e-04
+final | seed=123 | epoch=019 | train_loss=0.172410 | stop_loss=1.460097 | stop_auc=0.674689 | stop_bal_acc@0.5=0.638995 | stop_acc@0.5=0.634751 | lr=2.250000e-04
+final | seed=123 | epoch=020 | train_loss=0.168912 | stop_loss=1.522194 | stop_auc=0.669507 | stop_bal_acc@0.5=0.628548 | stop_acc@0.5=0.623088 | lr=2.250000e-04
+final | seed=123 | epoch=021 | train_loss=0.165375 | stop_loss=1.489801 | stop_auc=0.674380 | stop_bal_acc@0.5=0.632823 | stop_acc@0.5=0.624694 | lr=1.125000e-04
+final | seed=123 | epoch=022 | train_loss=0.152065 | stop_loss=1.538801 | stop_auc=0.663397 | stop_bal_acc@0.5=0.628585 | stop_acc@0.5=0.625742 | lr=1.125000e-04
+final | seed=123 | epoch=023 | train_loss=0.149036 | stop_loss=1.553030 | stop_auc=0.667115 | stop_bal_acc@0.5=0.629781 | stop_acc@0.5=0.624485 | lr=1.125000e-04
+final | seed=123 | epoch=024 | train_loss=0.146153 | stop_loss=1.567099 | stop_auc=0.664181 | stop_bal_acc@0.5=0.628721 | stop_acc@0.5=0.623298 | lr=5.625000e-05
+Early stopping for final | seed=123 at epoch 24
+Final seed=123 | best_epoch=18 | best_stop_auc=0.675021 | best_stop_bal_acc=0.636532
+
+--- Training final | seed=8080 ---
+Trainable params: 410,241
+final | seed=8080 | epoch=001 | train_loss=0.690020 | stop_loss=0.688049 | stop_auc=0.541714 | stop_bal_acc@0.5=0.516101 | stop_acc@0.5=0.539353 | lr=4.500000e-04
+final | seed=8080 | epoch=002 | train_loss=0.673463 | stop_loss=0.719367 | stop_auc=0.543139 | stop_bal_acc@0.5=0.517361 | stop_acc@0.5=0.536141 | lr=4.500000e-04
+final | seed=8080 | epoch=003 | train_loss=0.630566 | stop_loss=0.813238 | stop_auc=0.530691 | stop_bal_acc@0.5=0.515239 | stop_acc@0.5=0.517075 | lr=4.500000e-04
+final | seed=8080 | epoch=004 | train_loss=0.556613 | stop_loss=0.911959 | stop_auc=0.574228 | stop_bal_acc@0.5=0.547509 | stop_acc@0.5=0.550807 | lr=4.500000e-04
+final | seed=8080 | epoch=005 | train_loss=0.475955 | stop_loss=1.071603 | stop_auc=0.588321 | stop_bal_acc@0.5=0.563362 | stop_acc@0.5=0.559117 | lr=4.500000e-04
+final | seed=8080 | epoch=006 | train_loss=0.414796 | stop_loss=1.167361 | stop_auc=0.602910 | stop_bal_acc@0.5=0.565324 | stop_acc@0.5=0.561911 | lr=4.500000e-04
+final | seed=8080 | epoch=007 | train_loss=0.367519 | stop_loss=1.130864 | stop_auc=0.606362 | stop_bal_acc@0.5=0.572227 | stop_acc@0.5=0.573783 | lr=4.500000e-04
+final | seed=8080 | epoch=008 | train_loss=0.326513 | stop_loss=1.325847 | stop_auc=0.612903 | stop_bal_acc@0.5=0.573747 | stop_acc@0.5=0.574621 | lr=4.500000e-04
+final | seed=8080 | epoch=009 | train_loss=0.301013 | stop_loss=1.363386 | stop_auc=0.617917 | stop_bal_acc@0.5=0.576202 | stop_acc@0.5=0.577415 | lr=4.500000e-04
+final | seed=8080 | epoch=010 | train_loss=0.274906 | stop_loss=1.345576 | stop_auc=0.628056 | stop_bal_acc@0.5=0.585514 | stop_acc@0.5=0.582373 | lr=4.500000e-04
+final | seed=8080 | epoch=011 | train_loss=0.251481 | stop_loss=1.422288 | stop_auc=0.618222 | stop_bal_acc@0.5=0.571776 | stop_acc@0.5=0.575739 | lr=4.500000e-04
+final | seed=8080 | epoch=012 | train_loss=0.238196 | stop_loss=1.475345 | stop_auc=0.627663 | stop_bal_acc@0.5=0.581607 | stop_acc@0.5=0.583002 | lr=4.500000e-04
+final | seed=8080 | epoch=013 | train_loss=0.224566 | stop_loss=1.560156 | stop_auc=0.623764 | stop_bal_acc@0.5=0.576003 | stop_acc@0.5=0.574691 | lr=2.250000e-04
+final | seed=8080 | epoch=014 | train_loss=0.197551 | stop_loss=1.528104 | stop_auc=0.628832 | stop_bal_acc@0.5=0.586817 | stop_acc@0.5=0.584608 | lr=2.250000e-04
+final | seed=8080 | epoch=015 | train_loss=0.187021 | stop_loss=1.615090 | stop_auc=0.627727 | stop_bal_acc@0.5=0.579864 | stop_acc@0.5=0.580837 | lr=2.250000e-04
+final | seed=8080 | epoch=016 | train_loss=0.180146 | stop_loss=1.542535 | stop_auc=0.634395 | stop_bal_acc@0.5=0.590638 | stop_acc@0.5=0.589496 | lr=2.250000e-04
+final | seed=8080 | epoch=017 | train_loss=0.176148 | stop_loss=1.537071 | stop_auc=0.639945 | stop_bal_acc@0.5=0.599537 | stop_acc@0.5=0.600950 | lr=2.250000e-04
+final | seed=8080 | epoch=018 | train_loss=0.170067 | stop_loss=1.572473 | stop_auc=0.640616 | stop_bal_acc@0.5=0.593753 | stop_acc@0.5=0.596690 | lr=2.250000e-04
+final | seed=8080 | epoch=019 | train_loss=0.168362 | stop_loss=1.568712 | stop_auc=0.633053 | stop_bal_acc@0.5=0.590993 | stop_acc@0.5=0.591452 | lr=2.250000e-04
+final | seed=8080 | epoch=020 | train_loss=0.162395 | stop_loss=1.618012 | stop_auc=0.631837 | stop_bal_acc@0.5=0.598163 | stop_acc@0.5=0.597458 | lr=2.250000e-04
+final | seed=8080 | epoch=021 | train_loss=0.160376 | stop_loss=1.654864 | stop_auc=0.631713 | stop_bal_acc@0.5=0.590622 | stop_acc@0.5=0.588658 | lr=1.125000e-04
+final | seed=8080 | epoch=022 | train_loss=0.148555 | stop_loss=1.602510 | stop_auc=0.633419 | stop_bal_acc@0.5=0.595906 | stop_acc@0.5=0.595572 | lr=1.125000e-04
+final | seed=8080 | epoch=023 | train_loss=0.146168 | stop_loss=1.639556 | stop_auc=0.640997 | stop_bal_acc@0.5=0.601657 | stop_acc@0.5=0.603324 | lr=1.125000e-04
+final | seed=8080 | epoch=024 | train_loss=0.142666 | stop_loss=1.666770 | stop_auc=0.636479 | stop_bal_acc@0.5=0.597527 | stop_acc@0.5=0.597179 | lr=1.125000e-04
+final | seed=8080 | epoch=025 | train_loss=0.141305 | stop_loss=1.623736 | stop_auc=0.637419 | stop_bal_acc@0.5=0.600988 | stop_acc@0.5=0.602766 | lr=1.125000e-04
+final | seed=8080 | epoch=026 | train_loss=0.139361 | stop_loss=1.621691 | stop_auc=0.645578 | stop_bal_acc@0.5=0.609700 | stop_acc@0.5=0.609819 | lr=1.125000e-04
+final | seed=8080 | epoch=027 | train_loss=0.138035 | stop_loss=1.649207 | stop_auc=0.636427 | stop_bal_acc@0.5=0.600091 | stop_acc@0.5=0.596410 | lr=1.125000e-04
+final | seed=8080 | epoch=028 | train_loss=0.137930 | stop_loss=1.674593 | stop_auc=0.636267 | stop_bal_acc@0.5=0.589955 | stop_acc@0.5=0.588379 | lr=1.125000e-04
+final | seed=8080 | epoch=029 | train_loss=0.136660 | stop_loss=1.625712 | stop_auc=0.636414 | stop_bal_acc@0.5=0.601900 | stop_acc@0.5=0.602556 | lr=5.625000e-05
+final | seed=8080 | epoch=030 | train_loss=0.130614 | stop_loss=1.640677 | stop_auc=0.640657 | stop_bal_acc@0.5=0.596651 | stop_acc@0.5=0.596201 | lr=5.625000e-05
+final | seed=8080 | epoch=031 | train_loss=0.128078 | stop_loss=1.685637 | stop_auc=0.633823 | stop_bal_acc@0.5=0.598624 | stop_acc@0.5=0.597388 | lr=5.625000e-05
+final | seed=8080 | epoch=032 | train_loss=0.129320 | stop_loss=1.667672 | stop_auc=0.641415 | stop_bal_acc@0.5=0.601329 | stop_acc@0.5=0.602416 | lr=2.812500e-05
+Early stopping for final | seed=8080 at epoch 32
+Final seed=8080 | best_epoch=26 | best_stop_auc=0.645578 | best_stop_bal_acc=0.609700
+
+--- Training final | seed=1337 ---
+Trainable params: 410,241
+final | seed=1337 | epoch=001 | train_loss=0.691374 | stop_loss=0.688759 | stop_auc=0.533673 | stop_bal_acc@0.5=0.516960 | stop_acc@0.5=0.524687 | lr=4.500000e-04
+final | seed=1337 | epoch=002 | train_loss=0.675894 | stop_loss=0.711182 | stop_auc=0.542207 | stop_bal_acc@0.5=0.509331 | stop_acc@0.5=0.529995 | lr=4.500000e-04
+final | seed=1337 | epoch=003 | train_loss=0.627057 | stop_loss=0.813494 | stop_auc=0.549190 | stop_bal_acc@0.5=0.528405 | stop_acc@0.5=0.532439 | lr=4.500000e-04
+final | seed=1337 | epoch=004 | train_loss=0.559637 | stop_loss=0.868276 | stop_auc=0.579143 | stop_bal_acc@0.5=0.553739 | stop_acc@0.5=0.554159 | lr=4.500000e-04
+final | seed=1337 | epoch=005 | train_loss=0.486337 | stop_loss=0.974055 | stop_auc=0.624412 | stop_bal_acc@0.5=0.598797 | stop_acc@0.5=0.595642 | lr=4.500000e-04
+final | seed=1337 | epoch=006 | train_loss=0.428001 | stop_loss=1.156666 | stop_auc=0.616500 | stop_bal_acc@0.5=0.592356 | stop_acc@0.5=0.592988 | lr=4.500000e-04
+final | seed=1337 | epoch=007 | train_loss=0.379006 | stop_loss=1.179322 | stop_auc=0.634011 | stop_bal_acc@0.5=0.601864 | stop_acc@0.5=0.600182 | lr=4.500000e-04
+final | seed=1337 | epoch=008 | train_loss=0.338396 | stop_loss=1.121938 | stop_auc=0.656852 | stop_bal_acc@0.5=0.602923 | stop_acc@0.5=0.606746 | lr=4.500000e-04
+final | seed=1337 | epoch=009 | train_loss=0.310844 | stop_loss=1.245414 | stop_auc=0.655449 | stop_bal_acc@0.5=0.611699 | stop_acc@0.5=0.610029 | lr=4.500000e-04
+final | seed=1337 | epoch=010 | train_loss=0.281173 | stop_loss=1.288269 | stop_auc=0.657316 | stop_bal_acc@0.5=0.618038 | stop_acc@0.5=0.619107 | lr=4.500000e-04
+final | seed=1337 | epoch=011 | train_loss=0.263565 | stop_loss=1.265759 | stop_auc=0.663808 | stop_bal_acc@0.5=0.628771 | stop_acc@0.5=0.629932 | lr=4.500000e-04
+final | seed=1337 | epoch=012 | train_loss=0.245881 | stop_loss=1.306728 | stop_auc=0.660100 | stop_bal_acc@0.5=0.611618 | stop_acc@0.5=0.612613 | lr=4.500000e-04
+final | seed=1337 | epoch=013 | train_loss=0.230590 | stop_loss=1.363437 | stop_auc=0.662074 | stop_bal_acc@0.5=0.617173 | stop_acc@0.5=0.618130 | lr=4.500000e-04
+final | seed=1337 | epoch=014 | train_loss=0.216593 | stop_loss=1.431738 | stop_auc=0.654553 | stop_bal_acc@0.5=0.613004 | stop_acc@0.5=0.612682 | lr=2.250000e-04
+final | seed=1337 | epoch=015 | train_loss=0.189374 | stop_loss=1.389226 | stop_auc=0.672301 | stop_bal_acc@0.5=0.631222 | stop_acc@0.5=0.632097 | lr=2.250000e-04
+final | seed=1337 | epoch=016 | train_loss=0.180613 | stop_loss=1.472411 | stop_auc=0.656014 | stop_bal_acc@0.5=0.617379 | stop_acc@0.5=0.616663 | lr=2.250000e-04
+final | seed=1337 | epoch=017 | train_loss=0.176590 | stop_loss=1.438116 | stop_auc=0.672416 | stop_bal_acc@0.5=0.632540 | stop_acc@0.5=0.629583 | lr=2.250000e-04
+final | seed=1337 | epoch=018 | train_loss=0.170753 | stop_loss=1.450912 | stop_auc=0.678677 | stop_bal_acc@0.5=0.632072 | stop_acc@0.5=0.628675 | lr=2.250000e-04
+final | seed=1337 | epoch=019 | train_loss=0.168636 | stop_loss=1.460464 | stop_auc=0.667586 | stop_bal_acc@0.5=0.628118 | stop_acc@0.5=0.624904 | lr=2.250000e-04
+final | seed=1337 | epoch=020 | train_loss=0.165756 | stop_loss=1.508163 | stop_auc=0.657367 | stop_bal_acc@0.5=0.618190 | stop_acc@0.5=0.615755 | lr=2.250000e-04
+final | seed=1337 | epoch=021 | train_loss=0.158917 | stop_loss=1.462659 | stop_auc=0.673456 | stop_bal_acc@0.5=0.627272 | stop_acc@0.5=0.625463 | lr=1.125000e-04
+final | seed=1337 | epoch=022 | train_loss=0.147332 | stop_loss=1.492264 | stop_auc=0.672966 | stop_bal_acc@0.5=0.629614 | stop_acc@0.5=0.627209 | lr=1.125000e-04
+final | seed=1337 | epoch=023 | train_loss=0.145420 | stop_loss=1.545360 | stop_auc=0.671065 | stop_bal_acc@0.5=0.631332 | stop_acc@0.5=0.626999 | lr=1.125000e-04
+final | seed=1337 | epoch=024 | train_loss=0.143245 | stop_loss=1.569940 | stop_auc=0.667978 | stop_bal_acc@0.5=0.623967 | stop_acc@0.5=0.620714 | lr=5.625000e-05
+Early stopping for final | seed=1337 at epoch 24
+Final seed=1337 | best_epoch=18 | best_stop_auc=0.678677 | best_stop_bal_acc=0.632072
+
+--- Training final | seed=999 ---
+Trainable params: 410,241
+final | seed=999 | epoch=001 | train_loss=0.691107 | stop_loss=0.687351 | stop_auc=0.549516 | stop_bal_acc@0.5=0.523936 | stop_acc@0.5=0.532579 | lr=4.500000e-04
+final | seed=999 | epoch=002 | train_loss=0.675473 | stop_loss=0.728972 | stop_auc=0.542750 | stop_bal_acc@0.5=0.509549 | stop_acc@0.5=0.519659 | lr=4.500000e-04
+final | seed=999 | epoch=003 | train_loss=0.629094 | stop_loss=0.755447 | stop_auc=0.548467 | stop_bal_acc@0.5=0.517159 | stop_acc@0.5=0.514771 | lr=4.500000e-04
+final | seed=999 | epoch=004 | train_loss=0.555242 | stop_loss=0.875963 | stop_auc=0.581325 | stop_bal_acc@0.5=0.553444 | stop_acc@0.5=0.555206 | lr=4.500000e-04
+final | seed=999 | epoch=005 | train_loss=0.481479 | stop_loss=0.979552 | stop_auc=0.601954 | stop_bal_acc@0.5=0.575325 | stop_acc@0.5=0.579999 | lr=4.500000e-04
+final | seed=999 | epoch=006 | train_loss=0.418568 | stop_loss=1.081788 | stop_auc=0.619557 | stop_bal_acc@0.5=0.587175 | stop_acc@0.5=0.583421 | lr=4.500000e-04
+final | seed=999 | epoch=007 | train_loss=0.368342 | stop_loss=1.139208 | stop_auc=0.625353 | stop_bal_acc@0.5=0.590935 | stop_acc@0.5=0.588798 | lr=4.500000e-04
+final | seed=999 | epoch=008 | train_loss=0.330062 | stop_loss=1.250706 | stop_auc=0.618623 | stop_bal_acc@0.5=0.581957 | stop_acc@0.5=0.582303 | lr=4.500000e-04
+final | seed=999 | epoch=009 | train_loss=0.301430 | stop_loss=1.315067 | stop_auc=0.626221 | stop_bal_acc@0.5=0.587462 | stop_acc@0.5=0.588379 | lr=4.500000e-04
+final | seed=999 | epoch=010 | train_loss=0.280012 | stop_loss=1.422980 | stop_auc=0.633159 | stop_bal_acc@0.5=0.600414 | stop_acc@0.5=0.600182 | lr=4.500000e-04
+final | seed=999 | epoch=011 | train_loss=0.255590 | stop_loss=1.371490 | stop_auc=0.633171 | stop_bal_acc@0.5=0.597013 | stop_acc@0.5=0.601020 | lr=4.500000e-04
+final | seed=999 | epoch=012 | train_loss=0.239713 | stop_loss=1.437290 | stop_auc=0.631268 | stop_bal_acc@0.5=0.590154 | stop_acc@0.5=0.589427 | lr=4.500000e-04
+final | seed=999 | epoch=013 | train_loss=0.222238 | stop_loss=1.414154 | stop_auc=0.642404 | stop_bal_acc@0.5=0.599673 | stop_acc@0.5=0.596620 | lr=4.500000e-04
+final | seed=999 | epoch=014 | train_loss=0.209892 | stop_loss=1.580593 | stop_auc=0.631978 | stop_bal_acc@0.5=0.590097 | stop_acc@0.5=0.590614 | lr=4.500000e-04
+final | seed=999 | epoch=015 | train_loss=0.204228 | stop_loss=1.476355 | stop_auc=0.640282 | stop_bal_acc@0.5=0.600576 | stop_acc@0.5=0.600321 | lr=4.500000e-04
+final | seed=999 | epoch=016 | train_loss=0.193285 | stop_loss=1.487136 | stop_auc=0.636127 | stop_bal_acc@0.5=0.593979 | stop_acc@0.5=0.594874 | lr=2.250000e-04
+final | seed=999 | epoch=017 | train_loss=0.167938 | stop_loss=1.517516 | stop_auc=0.642698 | stop_bal_acc@0.5=0.596438 | stop_acc@0.5=0.596410 | lr=2.250000e-04
+final | seed=999 | epoch=018 | train_loss=0.160492 | stop_loss=1.496778 | stop_auc=0.652709 | stop_bal_acc@0.5=0.614079 | stop_acc@0.5=0.612682 | lr=2.250000e-04
+final | seed=999 | epoch=019 | train_loss=0.157714 | stop_loss=1.568237 | stop_auc=0.645632 | stop_bal_acc@0.5=0.603831 | stop_acc@0.5=0.603953 | lr=2.250000e-04
+final | seed=999 | epoch=020 | train_loss=0.153278 | stop_loss=1.566950 | stop_auc=0.638408 | stop_bal_acc@0.5=0.597874 | stop_acc@0.5=0.597737 | lr=2.250000e-04
+final | seed=999 | epoch=021 | train_loss=0.150206 | stop_loss=1.606821 | stop_auc=0.641544 | stop_bal_acc@0.5=0.603711 | stop_acc@0.5=0.603673 | lr=1.125000e-04
+final | seed=999 | epoch=022 | train_loss=0.137599 | stop_loss=1.596455 | stop_auc=0.646682 | stop_bal_acc@0.5=0.609013 | stop_acc@0.5=0.606397 | lr=1.125000e-04
+final | seed=999 | epoch=023 | train_loss=0.139357 | stop_loss=1.550750 | stop_auc=0.647685 | stop_bal_acc@0.5=0.610426 | stop_acc@0.5=0.610937 | lr=1.125000e-04
+final | seed=999 | epoch=024 | train_loss=0.135853 | stop_loss=1.603115 | stop_auc=0.640015 | stop_bal_acc@0.5=0.604237 | stop_acc@0.5=0.603534 | lr=5.625000e-05
+Early stopping for final | seed=999 at epoch 24
+Final seed=999 | best_epoch=18 | best_stop_auc=0.652709 | best_stop_bal_acc=0.614079
+
+--- Training final | seed=31415 ---
+Trainable params: 410,241
+final | seed=31415 | epoch=001 | train_loss=0.690941 | stop_loss=0.688423 | stop_auc=0.522402 | stop_bal_acc@0.5=0.526314 | stop_acc@0.5=0.554927 | lr=4.500000e-04
+final | seed=31415 | epoch=002 | train_loss=0.675227 | stop_loss=0.768924 | stop_auc=0.518841 | stop_bal_acc@0.5=0.505335 | stop_acc@0.5=0.504644 | lr=4.500000e-04
+final | seed=31415 | epoch=003 | train_loss=0.626261 | stop_loss=0.796211 | stop_auc=0.565630 | stop_bal_acc@0.5=0.559449 | stop_acc@0.5=0.551365 | lr=4.500000e-04
+final | seed=31415 | epoch=004 | train_loss=0.559798 | stop_loss=0.918068 | stop_auc=0.597235 | stop_bal_acc@0.5=0.571180 | stop_acc@0.5=0.571129 | lr=4.500000e-04
+final | seed=31415 | epoch=005 | train_loss=0.490452 | stop_loss=1.033906 | stop_auc=0.599765 | stop_bal_acc@0.5=0.569362 | stop_acc@0.5=0.563587 | lr=4.500000e-04
+final | seed=31415 | epoch=006 | train_loss=0.432806 | stop_loss=1.096835 | stop_auc=0.615944 | stop_bal_acc@0.5=0.592751 | stop_acc@0.5=0.592499 | lr=4.500000e-04
+final | seed=31415 | epoch=007 | train_loss=0.390963 | stop_loss=1.134522 | stop_auc=0.619164 | stop_bal_acc@0.5=0.587215 | stop_acc@0.5=0.586633 | lr=4.500000e-04
+final | seed=31415 | epoch=008 | train_loss=0.350148 | stop_loss=1.258509 | stop_auc=0.623818 | stop_bal_acc@0.5=0.590267 | stop_acc@0.5=0.584957 | lr=4.500000e-04
+final | seed=31415 | epoch=009 | train_loss=0.321371 | stop_loss=1.295301 | stop_auc=0.628124 | stop_bal_acc@0.5=0.596536 | stop_acc@0.5=0.594804 | lr=4.500000e-04
+final | seed=31415 | epoch=010 | train_loss=0.295306 | stop_loss=1.310147 | stop_auc=0.628371 | stop_bal_acc@0.5=0.598922 | stop_acc@0.5=0.600461 | lr=4.500000e-04
+final | seed=31415 | epoch=011 | train_loss=0.273682 | stop_loss=1.431231 | stop_auc=0.623282 | stop_bal_acc@0.5=0.593513 | stop_acc@0.5=0.590544 | lr=4.500000e-04
+final | seed=31415 | epoch=012 | train_loss=0.255049 | stop_loss=1.448395 | stop_auc=0.631876 | stop_bal_acc@0.5=0.600773 | stop_acc@0.5=0.600950 | lr=4.500000e-04
+final | seed=31415 | epoch=013 | train_loss=0.239307 | stop_loss=1.499508 | stop_auc=0.625595 | stop_bal_acc@0.5=0.605839 | stop_acc@0.5=0.605629 | lr=4.500000e-04
+final | seed=31415 | epoch=014 | train_loss=0.231201 | stop_loss=1.479241 | stop_auc=0.634083 | stop_bal_acc@0.5=0.590951 | stop_acc@0.5=0.584189 | lr=4.500000e-04
+final | seed=31415 | epoch=015 | train_loss=0.219266 | stop_loss=1.405898 | stop_auc=0.643705 | stop_bal_acc@0.5=0.599263 | stop_acc@0.5=0.594525 | lr=4.500000e-04
+final | seed=31415 | epoch=016 | train_loss=0.204115 | stop_loss=1.457325 | stop_auc=0.644439 | stop_bal_acc@0.5=0.612157 | stop_acc@0.5=0.609330 | lr=4.500000e-04
+final | seed=31415 | epoch=017 | train_loss=0.201441 | stop_loss=1.499151 | stop_auc=0.626880 | stop_bal_acc@0.5=0.604988 | stop_acc@0.5=0.601648 | lr=4.500000e-04
+final | seed=31415 | epoch=018 | train_loss=0.192679 | stop_loss=1.549707 | stop_auc=0.631436 | stop_bal_acc@0.5=0.594927 | stop_acc@0.5=0.589846 | lr=4.500000e-04
+final | seed=31415 | epoch=019 | train_loss=0.185798 | stop_loss=1.560025 | stop_auc=0.626713 | stop_bal_acc@0.5=0.600047 | stop_acc@0.5=0.598086 | lr=2.250000e-04
+final | seed=31415 | epoch=020 | train_loss=0.162137 | stop_loss=1.680814 | stop_auc=0.639582 | stop_bal_acc@0.5=0.604363 | stop_acc@0.5=0.599483 | lr=2.250000e-04
+final | seed=31415 | epoch=021 | train_loss=0.155966 | stop_loss=1.480072 | stop_auc=0.654314 | stop_bal_acc@0.5=0.617235 | stop_acc@0.5=0.619527 | lr=2.250000e-04
+final | seed=31415 | epoch=022 | train_loss=0.153125 | stop_loss=1.551676 | stop_auc=0.656799 | stop_bal_acc@0.5=0.617709 | stop_acc@0.5=0.616174 | lr=2.250000e-04
+final | seed=31415 | epoch=023 | train_loss=0.150565 | stop_loss=1.502827 | stop_auc=0.660587 | stop_bal_acc@0.5=0.626239 | stop_acc@0.5=0.625183 | lr=2.250000e-04
+final | seed=31415 | epoch=024 | train_loss=0.148064 | stop_loss=1.536602 | stop_auc=0.652059 | stop_bal_acc@0.5=0.618519 | stop_acc@0.5=0.616803 | lr=2.250000e-04
+final | seed=31415 | epoch=025 | train_loss=0.143955 | stop_loss=1.507709 | stop_auc=0.654380 | stop_bal_acc@0.5=0.622086 | stop_acc@0.5=0.620434 | lr=2.250000e-04
+final | seed=31415 | epoch=026 | train_loss=0.141281 | stop_loss=1.529759 | stop_auc=0.649175 | stop_bal_acc@0.5=0.620196 | stop_acc@0.5=0.618758 | lr=1.125000e-04
+final | seed=31415 | epoch=027 | train_loss=0.131497 | stop_loss=1.574219 | stop_auc=0.659564 | stop_bal_acc@0.5=0.623612 | stop_acc@0.5=0.622460 | lr=1.125000e-04
+final | seed=31415 | epoch=028 | train_loss=0.130992 | stop_loss=1.602830 | stop_auc=0.661236 | stop_bal_acc@0.5=0.625528 | stop_acc@0.5=0.622949 | lr=1.125000e-04
+final | seed=31415 | epoch=029 | train_loss=0.127856 | stop_loss=1.586679 | stop_auc=0.658827 | stop_bal_acc@0.5=0.621589 | stop_acc@0.5=0.621831 | lr=1.125000e-04
+final | seed=31415 | epoch=030 | train_loss=0.126718 | stop_loss=1.593050 | stop_auc=0.659761 | stop_bal_acc@0.5=0.619847 | stop_acc@0.5=0.617990 | lr=1.125000e-04
+final | seed=31415 | epoch=031 | train_loss=0.125353 | stop_loss=1.584196 | stop_auc=0.662690 | stop_bal_acc@0.5=0.628461 | stop_acc@0.5=0.626580 | lr=1.125000e-04
+final | seed=31415 | epoch=032 | train_loss=0.125429 | stop_loss=1.622628 | stop_auc=0.650165 | stop_bal_acc@0.5=0.615207 | stop_acc@0.5=0.614498 | lr=1.125000e-04
+Final seed=31415 | best_epoch=31 | best_stop_auc=0.662690 | best_stop_bal_acc=0.628461
+
+--- Training final | seed=42 ---
+Trainable params: 410,241
+final | seed=42 | epoch=001 | train_loss=0.690800 | stop_loss=0.688912 | stop_auc=0.535062 | stop_bal_acc@0.5=0.513015 | stop_acc@0.5=0.542566 | lr=4.500000e-04
+final | seed=42 | epoch=002 | train_loss=0.675706 | stop_loss=0.725314 | stop_auc=0.549162 | stop_bal_acc@0.5=0.532358 | stop_acc@0.5=0.539563 | lr=4.500000e-04
+final | seed=42 | epoch=003 | train_loss=0.630920 | stop_loss=0.828511 | stop_auc=0.537470 | stop_bal_acc@0.5=0.532250 | stop_acc@0.5=0.524967 | lr=4.500000e-04
+final | seed=42 | epoch=004 | train_loss=0.566688 | stop_loss=0.834298 | stop_auc=0.578974 | stop_bal_acc@0.5=0.551337 | stop_acc@0.5=0.547664 | lr=4.500000e-04
+final | seed=42 | epoch=005 | train_loss=0.498467 | stop_loss=0.926925 | stop_auc=0.612237 | stop_bal_acc@0.5=0.583859 | stop_acc@0.5=0.580418 | lr=4.500000e-04
+final | seed=42 | epoch=006 | train_loss=0.443936 | stop_loss=1.071737 | stop_auc=0.622833 | stop_bal_acc@0.5=0.582118 | stop_acc@0.5=0.576716 | lr=4.500000e-04
+final | seed=42 | epoch=007 | train_loss=0.391281 | stop_loss=1.196217 | stop_auc=0.623725 | stop_bal_acc@0.5=0.592196 | stop_acc@0.5=0.585935 | lr=4.500000e-04
+final | seed=42 | epoch=008 | train_loss=0.347351 | stop_loss=1.212878 | stop_auc=0.631150 | stop_bal_acc@0.5=0.594477 | stop_acc@0.5=0.593757 | lr=4.500000e-04
+final | seed=42 | epoch=009 | train_loss=0.314524 | stop_loss=1.137023 | stop_auc=0.654089 | stop_bal_acc@0.5=0.616417 | stop_acc@0.5=0.612054 | lr=4.500000e-04
+final | seed=42 | epoch=010 | train_loss=0.286288 | stop_loss=1.348865 | stop_auc=0.636765 | stop_bal_acc@0.5=0.587275 | stop_acc@0.5=0.585865 | lr=4.500000e-04
+final | seed=42 | epoch=011 | train_loss=0.262433 | stop_loss=1.419555 | stop_auc=0.644213 | stop_bal_acc@0.5=0.609390 | stop_acc@0.5=0.601089 | lr=4.500000e-04
+final | seed=42 | epoch=012 | train_loss=0.246555 | stop_loss=1.331511 | stop_auc=0.646128 | stop_bal_acc@0.5=0.599582 | stop_acc@0.5=0.595782 | lr=2.250000e-04
+final | seed=42 | epoch=013 | train_loss=0.214262 | stop_loss=1.437117 | stop_auc=0.656456 | stop_bal_acc@0.5=0.612878 | stop_acc@0.5=0.611356 | lr=2.250000e-04
+final | seed=42 | epoch=014 | train_loss=0.201743 | stop_loss=1.444896 | stop_auc=0.663513 | stop_bal_acc@0.5=0.617478 | stop_acc@0.5=0.615197 | lr=2.250000e-04
+final | seed=42 | epoch=015 | train_loss=0.193823 | stop_loss=1.565454 | stop_auc=0.652175 | stop_bal_acc@0.5=0.609976 | stop_acc@0.5=0.605629 | lr=2.250000e-04
+final | seed=42 | epoch=016 | train_loss=0.187887 | stop_loss=1.543706 | stop_auc=0.652322 | stop_bal_acc@0.5=0.613450 | stop_acc@0.5=0.609889 | lr=2.250000e-04
+final | seed=42 | epoch=017 | train_loss=0.181843 | stop_loss=1.478979 | stop_auc=0.660517 | stop_bal_acc@0.5=0.611193 | stop_acc@0.5=0.609889 | lr=1.125000e-04
+final | seed=42 | epoch=018 | train_loss=0.168112 | stop_loss=1.492075 | stop_auc=0.660133 | stop_bal_acc@0.5=0.619344 | stop_acc@0.5=0.618339 | lr=1.125000e-04
+final | seed=42 | epoch=019 | train_loss=0.162511 | stop_loss=1.525727 | stop_auc=0.662623 | stop_bal_acc@0.5=0.622239 | stop_acc@0.5=0.620923 | lr=1.125000e-04
+final | seed=42 | epoch=020 | train_loss=0.160368 | stop_loss=1.517652 | stop_auc=0.656669 | stop_bal_acc@0.5=0.612047 | stop_acc@0.5=0.610727 | lr=5.625000e-05
+Early stopping for final | seed=42 at epoch 20
+Final seed=42 | best_epoch=14 | best_stop_auc=0.663513 | best_stop_bal_acc=0.617478
+
+--- Training final | seed=777 ---
+Trainable params: 410,241
+final | seed=777 | epoch=001 | train_loss=0.690294 | stop_loss=0.690619 | stop_auc=0.527279 | stop_bal_acc@0.5=0.501845 | stop_acc@0.5=0.530484 | lr=4.500000e-04
+final | seed=777 | epoch=002 | train_loss=0.674438 | stop_loss=0.711528 | stop_auc=0.531489 | stop_bal_acc@0.5=0.512433 | stop_acc@0.5=0.536839 | lr=4.500000e-04
+final | seed=777 | epoch=003 | train_loss=0.634635 | stop_loss=0.769323 | stop_auc=0.557158 | stop_bal_acc@0.5=0.531773 | stop_acc@0.5=0.540541 | lr=4.500000e-04
+final | seed=777 | epoch=004 | train_loss=0.565372 | stop_loss=0.878486 | stop_auc=0.586167 | stop_bal_acc@0.5=0.566948 | stop_acc@0.5=0.562190 | lr=4.500000e-04
+final | seed=777 | epoch=005 | train_loss=0.493559 | stop_loss=0.937734 | stop_auc=0.622248 | stop_bal_acc@0.5=0.587120 | stop_acc@0.5=0.590474 | lr=4.500000e-04
+final | seed=777 | epoch=006 | train_loss=0.430880 | stop_loss=1.057215 | stop_auc=0.639367 | stop_bal_acc@0.5=0.602680 | stop_acc@0.5=0.596410 | lr=4.500000e-04
+final | seed=777 | epoch=007 | train_loss=0.385033 | stop_loss=1.138169 | stop_auc=0.641752 | stop_bal_acc@0.5=0.607924 | stop_acc@0.5=0.601997 | lr=4.500000e-04
+final | seed=777 | epoch=008 | train_loss=0.344206 | stop_loss=1.240431 | stop_auc=0.642709 | stop_bal_acc@0.5=0.606233 | stop_acc@0.5=0.603115 | lr=4.500000e-04
+final | seed=777 | epoch=009 | train_loss=0.314565 | stop_loss=1.312324 | stop_auc=0.625759 | stop_bal_acc@0.5=0.593155 | stop_acc@0.5=0.593617 | lr=4.500000e-04
+final | seed=777 | epoch=010 | train_loss=0.286389 | stop_loss=1.338847 | stop_auc=0.634236 | stop_bal_acc@0.5=0.596510 | stop_acc@0.5=0.595852 | lr=4.500000e-04
+final | seed=777 | epoch=011 | train_loss=0.267125 | stop_loss=1.359409 | stop_auc=0.640165 | stop_bal_acc@0.5=0.612837 | stop_acc@0.5=0.608003 | lr=2.250000e-04
+final | seed=777 | epoch=012 | train_loss=0.229018 | stop_loss=1.461329 | stop_auc=0.643871 | stop_bal_acc@0.5=0.605225 | stop_acc@0.5=0.599832 | lr=2.250000e-04
+final | seed=777 | epoch=013 | train_loss=0.215786 | stop_loss=1.451588 | stop_auc=0.646676 | stop_bal_acc@0.5=0.607136 | stop_acc@0.5=0.603254 | lr=2.250000e-04
+final | seed=777 | epoch=014 | train_loss=0.210331 | stop_loss=1.519911 | stop_auc=0.649667 | stop_bal_acc@0.5=0.607758 | stop_acc@0.5=0.601229 | lr=2.250000e-04
+final | seed=777 | epoch=015 | train_loss=0.201512 | stop_loss=1.507685 | stop_auc=0.633762 | stop_bal_acc@0.5=0.599339 | stop_acc@0.5=0.592779 | lr=2.250000e-04
+final | seed=777 | epoch=016 | train_loss=0.193533 | stop_loss=1.472090 | stop_auc=0.647058 | stop_bal_acc@0.5=0.615614 | stop_acc@0.5=0.610727 | lr=2.250000e-04
+final | seed=777 | epoch=017 | train_loss=0.187283 | stop_loss=1.509906 | stop_auc=0.646378 | stop_bal_acc@0.5=0.616854 | stop_acc@0.5=0.609679 | lr=1.125000e-04
+final | seed=777 | epoch=018 | train_loss=0.174765 | stop_loss=1.501846 | stop_auc=0.652197 | stop_bal_acc@0.5=0.615346 | stop_acc@0.5=0.609051 | lr=1.125000e-04
+final | seed=777 | epoch=019 | train_loss=0.167425 | stop_loss=1.573620 | stop_auc=0.643265 | stop_bal_acc@0.5=0.607371 | stop_acc@0.5=0.602975 | lr=1.125000e-04
+final | seed=777 | epoch=020 | train_loss=0.167676 | stop_loss=1.536048 | stop_auc=0.646061 | stop_bal_acc@0.5=0.614790 | stop_acc@0.5=0.609470 | lr=1.125000e-04
+final | seed=777 | epoch=021 | train_loss=0.162513 | stop_loss=1.561218 | stop_auc=0.651979 | stop_bal_acc@0.5=0.616121 | stop_acc@0.5=0.609191 | lr=5.625000e-05
+final | seed=777 | epoch=022 | train_loss=0.155659 | stop_loss=1.574529 | stop_auc=0.648713 | stop_bal_acc@0.5=0.613410 | stop_acc@0.5=0.608702 | lr=5.625000e-05
+final | seed=777 | epoch=023 | train_loss=0.154915 | stop_loss=1.540968 | stop_auc=0.652801 | stop_bal_acc@0.5=0.615133 | stop_acc@0.5=0.611146 | lr=5.625000e-05
+final | seed=777 | epoch=024 | train_loss=0.153173 | stop_loss=1.580688 | stop_auc=0.645491 | stop_bal_acc@0.5=0.612567 | stop_acc@0.5=0.607724 | lr=5.625000e-05
+final | seed=777 | epoch=025 | train_loss=0.152149 | stop_loss=1.568264 | stop_auc=0.648987 | stop_bal_acc@0.5=0.613666 | stop_acc@0.5=0.608353 | lr=5.625000e-05
+final | seed=777 | epoch=026 | train_loss=0.150593 | stop_loss=1.605165 | stop_auc=0.643405 | stop_bal_acc@0.5=0.608973 | stop_acc@0.5=0.603185 | lr=2.812500e-05
+final | seed=777 | epoch=027 | train_loss=0.147574 | stop_loss=1.603251 | stop_auc=0.644284 | stop_bal_acc@0.5=0.612723 | stop_acc@0.5=0.606956 | lr=2.812500e-05
+final | seed=777 | epoch=028 | train_loss=0.143845 | stop_loss=1.609829 | stop_auc=0.646501 | stop_bal_acc@0.5=0.614995 | stop_acc@0.5=0.609610 | lr=2.812500e-05
+final | seed=777 | epoch=029 | train_loss=0.144463 | stop_loss=1.633547 | stop_auc=0.643609 | stop_bal_acc@0.5=0.612161 | stop_acc@0.5=0.606327 | lr=1.406250e-05
+Early stopping for final | seed=777 at epoch 29
+Final seed=777 | best_epoch=23 | best_stop_auc=0.652801 | best_stop_bal_acc=0.615133
+
+====================================================================================================
+9. FINAL TEST EVALUATION
+====================================================================================================
+Test Accuracy:           0.627118
+Test Balanced Accuracy:  0.627423
+Test F1:                 0.620770
+Test Precision:          0.606952
+Test Recall:             0.635232
+Test ROC-AUC:            0.681732
+Test AP:                 0.672756
+Diagnostic flipped ROC-AUC (do not tune on this): 0.318268
+
+Test Classification Report:
+              precision    recall  f1-score   support
+
+           0     0.6475    0.6196    0.6333      7729
+           1     0.6070    0.6352    0.6208      7147
+
+    accuracy                         0.6271     14876
+   macro avg     0.6272    0.6274    0.6270     14876
+weighted avg     0.6280    0.6271    0.6273     14876
+
+Test Confusion Matrix:
+[[4789 2940]
+ [2607 4540]]
+
+Probability diagnostics:
+Test probs mean=0.461808 std=0.320227 min=0.002787 max=0.997184
+
+====================================================================================================
+10. FEATURE IMPORTANCE APPROXIMATION
+====================================================================================================
+Skipped for the current Transformer Encoder version.
+The previous feature-importance method was specific to the MLP architecture.
+
+====================================================================================================
+11. SAMPLE PREDICTIONS
+====================================================================================================
+Saved test predictions CSV to: runs\transformer\2026-05-02_16-46-42\transformer_encoder_timesplit_sequence_w120_h60_2026-05-02_16-46-42_test_predictions.csv
+
+First 40 test predictions:
+                timestamp  future_return  actual  predicted  prob_up  correct
+2025-08-13 16:00:00+00:00      -0.005142       0          1 0.933577        0
+2025-08-13 16:01:00+00:00      -0.005198       0          1 0.972143        0
+2025-08-13 16:02:00+00:00      -0.005152       0          1 0.991695        0
+2025-08-13 16:03:00+00:00      -0.005310       0          1 0.992707        0
+2025-08-13 16:04:00+00:00      -0.005953       0          1 0.994701        0
+2025-08-13 16:05:00+00:00      -0.006135       0          1 0.995793        0
+2025-08-13 16:06:00+00:00      -0.005794       0          1 0.994159        0
+2025-08-13 16:07:00+00:00      -0.006721       0          1 0.988026        0
+2025-08-13 16:08:00+00:00      -0.006529       0          1 0.964854        0
+2025-08-13 16:09:00+00:00      -0.006682       0          1 0.928861        0
+2025-08-13 16:10:00+00:00      -0.006682       0          1 0.914578        0
+2025-08-13 16:11:00+00:00      -0.006935       0          1 0.909640        0
+2025-08-13 16:12:00+00:00      -0.006641       0          1 0.907169        0
+2025-08-13 16:13:00+00:00      -0.006779       0          1 0.919957        0
+2025-08-13 16:14:00+00:00      -0.006663       0          1 0.916406        0
+2025-08-13 16:15:00+00:00      -0.006687       0          1 0.914453        0
+2025-08-13 16:16:00+00:00      -0.006550       0          1 0.914691        0
+2025-08-13 16:17:00+00:00      -0.006834       0          1 0.917459        0
+2025-08-13 16:18:00+00:00      -0.006317       0          1 0.917186        0
+2025-08-13 16:19:00+00:00      -0.005231       0          1 0.901975        0
+2025-08-13 16:20:00+00:00      -0.004646       0          1 0.897299        0
+2025-08-13 16:21:00+00:00      -0.004024       0          1 0.896726        0
+2025-08-13 16:22:00+00:00      -0.003730       0          1 0.893070        0
+2025-08-13 16:23:00+00:00      -0.003900       0          1 0.851243        0
+2025-08-13 16:24:00+00:00      -0.003541       0          1 0.745628        0
+2025-08-13 16:25:00+00:00      -0.003512       0          1 0.770309        0
+2025-08-13 16:26:00+00:00      -0.003247       0          1 0.700772        0
+2025-08-13 16:27:00+00:00      -0.002763       0          1 0.785188        0
+2025-08-13 16:28:00+00:00      -0.002801       0          1 0.747753        0
+2025-08-13 16:34:00+00:00      -0.002918       0          1 0.681466        0
+2025-08-13 16:35:00+00:00      -0.003536       0          1 0.655786        0
+2025-08-13 16:36:00+00:00      -0.003827       0          1 0.695263        0
+2025-08-13 16:37:00+00:00      -0.004086       0          1 0.649473        0
+2025-08-13 16:38:00+00:00      -0.003888       0          1 0.623010        0
+2025-08-13 16:39:00+00:00      -0.003670       0          1 0.626636        0
+2025-08-13 16:40:00+00:00      -0.004164       0          1 0.636109        0
+2025-08-13 16:41:00+00:00      -0.004429       0          1 0.665126        0
+2025-08-13 16:42:00+00:00      -0.004135       0          1 0.705762        0
+2025-08-13 16:43:00+00:00      -0.004723       0          1 0.828299        0
+2025-08-13 16:44:00+00:00      -0.004523       0          1 0.823746        0
+
+Top 40 most confident wrong predictions:
+                timestamp  future_return  actual  predicted  prob_up  correct  confidence
+2025-09-02 19:49:00+00:00       0.003549       1          0 0.002787        0    0.997213
+2025-09-02 19:48:00+00:00       0.003729       1          0 0.002806        0    0.997194
+2025-09-02 19:40:00+00:00       0.003627       1          0 0.002814        0    0.997186
+2025-09-02 19:39:00+00:00       0.003274       1          0 0.002816        0    0.997184
+2025-09-02 19:45:00+00:00       0.002708       1          0 0.002823        0    0.997177
+2025-09-02 19:41:00+00:00       0.003442       1          0 0.002823        0    0.997177
+2025-09-02 19:38:00+00:00       0.003254       1          0 0.002833        0    0.997167
+2025-09-02 19:46:00+00:00       0.002877       1          0 0.002850        0    0.997150
+2025-09-02 19:47:00+00:00       0.003196       1          0 0.002870        0    0.997130
+2025-09-02 19:36:00+00:00       0.003046       1          0 0.002884        0    0.997116
+2025-09-02 19:32:00+00:00       0.002595       1          0 0.002898        0    0.997102
+2025-09-02 19:37:00+00:00       0.004554       1          0 0.002900        0    0.997100
+2025-09-02 19:31:00+00:00       0.003076       1          0 0.002907        0    0.997093
+2025-09-02 19:33:00+00:00       0.003066       1          0 0.002907        0    0.997093
+2025-09-02 19:30:00+00:00       0.002918       1          0 0.002926        0    0.997074
+2025-09-02 19:35:00+00:00       0.003226       1          0 0.002943        0    0.997057
+2025-09-02 19:26:00+00:00       0.002878       1          0 0.002988        0    0.997012
+2025-09-02 19:51:00+00:00       0.002772       1          0 0.002999        0    0.997001
+2025-09-02 19:53:00+00:00       0.002931       1          0 0.003021        0    0.996979
+2025-09-02 19:52:00+00:00       0.003367       1          0 0.003024        0    0.996976
+2025-09-02 19:25:00+00:00       0.002630       1          0 0.003037        0    0.996963
+2025-09-02 19:34:00+00:00       0.003253       1          0 0.003049        0    0.996951
+2025-09-02 19:27:00+00:00       0.002934       1          0 0.003056        0    0.996944
+2025-12-11 18:17:00+00:00       0.010593       1          0 0.003081        0    0.996919
+2025-12-11 18:18:00+00:00       0.010927       1          0 0.003097        0    0.996903
+2025-09-02 19:21:00+00:00       0.005350       1          0 0.003113        0    0.996887
+2025-09-02 19:20:00+00:00       0.004506       1          0 0.003125        0    0.996875
+2025-12-11 18:16:00+00:00       0.010574       1          0 0.003144        0    0.996856
+2025-12-11 18:15:00+00:00       0.010197       1          0 0.003158        0    0.996842
+2025-12-11 17:46:00+00:00       0.008691       1          0 0.003163        0    0.996837
+2025-12-11 17:40:00+00:00       0.005054       1          0 0.003163        0    0.996837
+2025-09-02 19:23:00+00:00       0.003623       1          0 0.003163        0    0.996837
+2025-12-11 17:37:00+00:00       0.004260       1          0 0.003165        0    0.996835
+2025-09-02 19:24:00+00:00       0.003693       1          0 0.003170        0    0.996830
+2025-12-11 18:19:00+00:00       0.010730       1          0 0.003173        0    0.996827
+2025-12-11 18:14:00+00:00       0.010036       1          0 0.003174        0    0.996826
+2025-12-11 17:41:00+00:00       0.005152       1          0 0.003181        0    0.996819
+2025-09-02 19:50:00+00:00       0.003644       1          0 0.003185        0    0.996815
+2025-12-11 17:39:00+00:00       0.004951       1          0 0.003188        0    0.996812
+2025-12-11 17:45:00+00:00       0.007726       1          0 0.003190        0    0.996810
+
+====================================================================================================
+12. AUTO NOTES
+====================================================================================================
+1. Test accuracy cleared 52%. This configuration is worth keeping as a Transformer Encoder candidate
+2. This Transformer file keeps full sequence windows and uses self-attention over the window instead of recurrent LSTM memory.
+3. This file uses walk-forward validation and OOF threshold selection, which is safer than picking one contiguous validation slice.
+4. If this still saturates, the next levers are D_MODEL=64/128, NHEAD=4/8, WINDOW=90, TRAIN_MOVE_QUANTILE=0.50, or PREDICTION_HORIZON=30.
+
+====================================================================================================
+13. SAVE REPORT
+====================================================================================================
